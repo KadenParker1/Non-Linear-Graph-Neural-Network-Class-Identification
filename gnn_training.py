@@ -70,24 +70,24 @@ def generate_graph(num_samples, num_classes,noise,f=lambda x:1, mode="polar"):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
-num_classes=2
+num_classes=5
 num_samples =5000
 noise=.05
-f = lambda x: x**2 - 5
-mode = "cartesian"
+f = lambda x: 1
+mode = "polar"
 features, adjacency_matrix, labels = generate_graph(num_samples,num_classes, noise, f, mode)
 features_tensor = torch.tensor(features, dtype=torch.float)
 labels_tensor = torch.tensor(labels, dtype=torch.long)
 edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
 
-colors = ['red','blue','green','yellow']
+colors = ['red','blue','green','yellow','purple']
 def visualize_graph(features, adjacency_matrix, labels):
     G = nx.from_numpy_array(adjacency_matrix)
     pos = {i: (features[i, 0], features[i, 1]) for i in range(len(features))}
     for i, label in enumerate(labels):
         G.nodes[i]['label'] = label
     plt.figure(figsize=(10, 10))
-    color_map = [colors[label%4] for label in labels]
+    color_map = [colors[label%len(colors)] for label in labels]
     nx.draw_networkx_nodes(G, pos, node_color=color_map, alpha=0.6, edgecolors='w')
     
     nx.draw_networkx_edges(G, pos, alpha=0.5)
@@ -99,7 +99,6 @@ def visualize_graph(features, adjacency_matrix, labels):
     plt.show()
 
 visualize_graph(features, adjacency_matrix, labels)
-
 
 
 # def visualize_graph(features, adjacency_matrix, labels):
@@ -169,7 +168,7 @@ for epoch in range(num_epochs):
         total_loss += loss.item() * data.num_nodes  
     
     total_loss /= len(data_loader.dataset)  
-    if epoch%50==0:
+    if (epoch+1)%50==0:
         print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
 
 def test(model,data):
