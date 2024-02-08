@@ -59,9 +59,9 @@ def generate_graph(num_samples, num_classes,noise):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
-num_classes=2
+num_classes=3
 num_samples =10000
-noise=.05
+noise=.50
 features, adjacency_matrix, labels = generate_graph(num_samples=num_samples,num_classes=num_classes, noise=noise)
 features_tensor = torch.tensor(features, dtype=torch.float)
 labels_tensor = torch.tensor(labels, dtype=torch.long)
@@ -146,6 +146,7 @@ num_epochs = 10000
 for epoch in range(num_epochs):
     model.train()
     total_loss = 0
+    total_nodes=0
     for data in data_loader:
         optimizer.zero_grad()
         out = model(data)
@@ -153,11 +154,12 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
-        total_loss += loss.item() * data.num_nodes  
+        total_loss += loss.item() * data.num_nodes 
+        total_nodes +=data.num_nodes 
     
-    total_loss /= len(data_loader.dataset)  
+    average_loss=total_loss /total_nodes 
     if epoch%50==0:
-        print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
+        print(f'Epoch {epoch+1}/{num_epochs}, Average Loss: {average_loss:.4f}')
 
 def test(model,data):
     model.eval()
