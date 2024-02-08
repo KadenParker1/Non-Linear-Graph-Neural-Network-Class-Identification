@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.datasets import make_blobs
 from scipy.stats import bernoulli, norm
 import networkx as nx
 import torch
@@ -143,7 +142,7 @@ def train():
 
 
 train()
-num_epochs = 5000
+num_epochs = 10000
 for epoch in range(num_epochs):
     model.train()
     total_loss = 0
@@ -153,13 +152,14 @@ for epoch in range(num_epochs):
         loss = F.cross_entropy(out, data.y)
         loss.backward()
         optimizer.step()
+
         total_loss += loss.item() * data.num_nodes  
     
     total_loss /= len(data_loader.dataset)  
     if epoch%50==0:
         print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
 
-def test(model,data):ls
+def test(model,data):
     model.eval()
     with torch.no_grad():  
         out = model(data)
