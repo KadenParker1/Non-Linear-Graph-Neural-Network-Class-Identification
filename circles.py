@@ -58,7 +58,7 @@ def generate_graph(num_samples, num_classes,noise):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
-num_classes=2
+num_classes=4
 num_samples =10000
 noise=.05
 features, adjacency_matrix, labels = generate_graph(num_samples=num_samples,num_classes=num_classes, noise=noise)
@@ -73,7 +73,7 @@ def visualize_graph(features, adjacency_matrix, labels):
     for i, label in enumerate(labels):
         G.nodes[i]['label'] = label
     plt.figure(figsize=(10, 10))
-    color_map = [colors[label%4] for label in labels]
+    color_map = [colors[label%(len(colors))] for label in labels]
     nx.draw_networkx_nodes(G, pos, node_color=color_map, alpha=0.6, edgecolors='w')
     
     nx.draw_networkx_edges(G, pos, alpha=0.5)
