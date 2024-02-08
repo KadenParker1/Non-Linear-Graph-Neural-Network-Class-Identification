@@ -4,7 +4,6 @@ from scipy.stats import bernoulli, norm
 import networkx as nx
 import torch
 from torch_geometric.data import Data
-from sklearn.datasets import make_circles
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from torch_geometric.data import DataLoader
@@ -59,22 +58,22 @@ def generate_graph(num_samples, num_classes,noise):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
-num_classes=2
-num_samples =10000
+num_classes=4
+num_samples =100
 noise=.05
 features, adjacency_matrix, labels = generate_graph(num_samples=num_samples,num_classes=num_classes, noise=noise)
 features_tensor = torch.tensor(features, dtype=torch.float)
 labels_tensor = torch.tensor(labels, dtype=torch.long)
 edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
 
-
+colors = ['red','blue','green','yellow']
 def visualize_graph(features, adjacency_matrix, labels):
     G = nx.from_numpy_array(adjacency_matrix)
     pos = {i: (features[i, 0], features[i, 1]) for i in range(len(features))}
     for i, label in enumerate(labels):
         G.nodes[i]['label'] = label
     plt.figure(figsize=(10, 10))
-    color_map = ['blue' if label == 0 else 'red' for label in labels]
+    color_map = [colors[label%4] for label in labels]
     nx.draw_networkx_nodes(G, pos, node_color=color_map, alpha=0.6, edgecolors='w')
     
     nx.draw_networkx_edges(G, pos, alpha=0.5)
