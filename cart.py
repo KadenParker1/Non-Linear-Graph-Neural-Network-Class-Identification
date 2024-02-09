@@ -10,7 +10,7 @@ from torch_geometric.data import DataLoader
 
 
 
-def generate_polar(f, num_samples, num_classes, noise):
+def generate_func(f,num_samples, num_classes, noise):
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
     
@@ -24,10 +24,10 @@ def generate_polar(f, num_samples, num_classes, noise):
             end_index = num_samples
         
         for i in range(start_index,end_index):
-            radius=np.random.normal(loc=radii[class_index],scale=noise)
-            angle=np.random.uniform(low=0,high=2*np.pi)
-            X[i, 0] = radius * f(angle) * np.cos(angle)
-            X[i, 1] = radius * f(angle) * np.sin(angle)
+            shift=np.random.normal(loc=radii[class_index],scale=noise)
+            dom=np.random.uniform(low=-5,high=5)
+            X[i, 0] = shift * dom
+            X[i, 1] = shift * f(dom)
             y[i] = class_index
         # angles = np.random.uniform(low=0, high=2*np.pi, size=(end_index - start_index,))
         # radii_noise = np.random.normal(loc=radii[class_index], scale=noise, size=(end_index - start_index,))
@@ -42,7 +42,7 @@ def generate_polar(f, num_samples, num_classes, noise):
 
 
 def generate_graph(f, num_samples, num_classes,noise):
-    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
+    X, y = generate_func(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
 
     # Generate SBM-like edges within each class
     adjacency_matrix = np.zeros((num_samples, num_samples))
@@ -59,10 +59,10 @@ def generate_graph(f, num_samples, num_classes,noise):
     
     return X, adjacency_matrix, y
 num_classes=2
-num_samples = 5000
+num_samples =1000
 noise=.05
-f = lambda t: (1+9/10*np.cos(8*t))*(1+1/10*np.cos(24*t))*(9/10+1/10*np.cos(200*t))*(1+np.sin(t))
-features, adjacency_matrix, labels = generate_graph(f,num_samples=num_samples,num_classes=num_classes, noise=noise)
+f = lambda x: np.exp(x)
+features, adjacency_matrix, labels = generate_graph(f, num_samples=num_samples,num_classes=num_classes, noise=noise)
 features_tensor = torch.tensor(features, dtype=torch.float)
 labels_tensor = torch.tensor(labels, dtype=torch.long)
 edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
@@ -141,7 +141,7 @@ def train():
 
 
 train()
-num_epochs = 5000
+num_epochs = 10000
 for epoch in range(num_epochs):
     model.train()
     total_loss = 0

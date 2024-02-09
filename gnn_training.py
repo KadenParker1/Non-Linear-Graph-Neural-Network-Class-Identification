@@ -10,7 +10,7 @@ from torch_geometric.data import DataLoader
 
 
 
-def generate_polar(f, num_samples, num_classes, noise):
+def generate_points(num_samples, num_classes, noise, f=lambda x:1, mode="polar"):
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
     
@@ -22,13 +22,25 @@ def generate_polar(f, num_samples, num_classes, noise):
         end_index = start_index + samples_per_class
         if class_index == num_classes - 1:  
             end_index = num_samples
-        
-        for i in range(start_index,end_index):
-            radius=np.random.normal(loc=radii[class_index],scale=noise)
-            angle=np.random.uniform(low=0,high=2*np.pi)
-            X[i, 0] = radius * f(angle) * np.cos(angle)
-            X[i, 1] = radius * f(angle) * np.sin(angle)
-            y[i] = class_index
+        n = end_index-start_index
+        shift=np.random.normal(loc=radii[class_index],scale=noise,size=n)
+        dom=np.random.uniform(low=-5,high=5,size=n)
+        if mode == "polar":
+            X[start_index:end_index, 0] = shift * f(dom) * np.cos(dom)
+            X[start_index:end_index, 1] = shift * f(dom) * np.sin(dom)
+            y[start_index:end_index] = class_index
+        elif mode == "cartesian":
+            X[start_index:end_index, 0] = shift * dom
+            X[start_index:end_index, 1] = shift * f(dom)
+            y[start_index:end_index] = class_index
+        else:
+            raise ValueError("Mode must be either 'polar' or 'cartesian'")
+        # for i in range(start_index,end_index):
+        #     shift=np.random.normal(loc=radii[class_index],scale=noise)
+        #     dom=np.random.uniform(low=-5,high=5)
+        #     X[i, 0] = shift * dom
+        #     X[i, 1] = shift * f(dom)
+        #     y[i] = class_index
         # angles = np.random.uniform(low=0, high=2*np.pi, size=(end_index - start_index,))
         # radii_noise = np.random.normal(loc=radii[class_index], scale=noise, size=(end_index - start_index,))
         # X[start_index:end_index, 0] = radii_noise * np.cos(angles)
@@ -41,8 +53,8 @@ def generate_polar(f, num_samples, num_classes, noise):
 
 
 
-def generate_graph(f, num_samples, num_classes,noise):
-    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
+def generate_graph(num_samples, num_classes,noise,f=lambda x:1, mode="polar"):
+    X, y = generate_points(num_samples, num_classes, noise, f, mode)
 
     # Generate SBM-like edges within each class
     adjacency_matrix = np.zeros((num_samples, num_samples))
@@ -58,23 +70,24 @@ def generate_graph(f, num_samples, num_classes,noise):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
-num_classes=2
-num_samples = 5000
+num_classes=5
+num_samples =5000
 noise=.05
-f = lambda t: (1+9/10*np.cos(8*t))*(1+1/10*np.cos(24*t))*(9/10+1/10*np.cos(200*t))*(1+np.sin(t))
-features, adjacency_matrix, labels = generate_graph(f,num_samples=num_samples,num_classes=num_classes, noise=noise)
+f = lambda x: 1
+mode = "polar"
+features, adjacency_matrix, labels = generate_graph(num_samples,num_classes, noise, f, mode)
 features_tensor = torch.tensor(features, dtype=torch.float)
 labels_tensor = torch.tensor(labels, dtype=torch.long)
 edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
 
-colors = ['red','blue','green','yellow']
+colors = ['red','blue','green','yellow','purple']
 def visualize_graph(features, adjacency_matrix, labels):
     G = nx.from_numpy_array(adjacency_matrix)
     pos = {i: (features[i, 0], features[i, 1]) for i in range(len(features))}
     for i, label in enumerate(labels):
         G.nodes[i]['label'] = label
     plt.figure(figsize=(10, 10))
-    color_map = [colors[label%4] for label in labels]
+    color_map = [colors[label%len(colors)] for label in labels]
     nx.draw_networkx_nodes(G, pos, node_color=color_map, alpha=0.6, edgecolors='w')
     
     nx.draw_networkx_edges(G, pos, alpha=0.5)
@@ -141,7 +154,7 @@ def train():
 
 
 train()
-num_epochs = 5000
+num_epochs = 10000
 for epoch in range(num_epochs):
     model.train()
     total_loss = 0
@@ -155,7 +168,7 @@ for epoch in range(num_epochs):
         total_loss += loss.item() * data.num_nodes  
     
     total_loss /= len(data_loader.dataset)  
-    if epoch%50==0:
+    if (epoch+1)%50==0:
         print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
 
 def test(model,data):
