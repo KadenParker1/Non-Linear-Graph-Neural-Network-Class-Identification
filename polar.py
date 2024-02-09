@@ -58,10 +58,10 @@ def generate_graph(f, num_samples, num_classes,noise):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
-num_classes=2
-num_samples =1000
-noise=.05
-f = lambda t: np.tanh(t)
+num_classes=3
+num_samples =5000
+noise=.25
+f = lambda t: np.cos(4*t)
 features, adjacency_matrix, labels = generate_graph(f,num_samples=num_samples,num_classes=num_classes, noise=noise)
 features_tensor = torch.tensor(features, dtype=torch.float)
 labels_tensor = torch.tensor(labels, dtype=torch.long)
@@ -87,7 +87,6 @@ def visualize_graph(features, adjacency_matrix, labels):
 
 visualize_graph(features, adjacency_matrix, labels)
 
-exit()
 
 # def visualize_graph(features, adjacency_matrix, labels):
 #     plt.figure(figsize=(10, 8))
@@ -142,7 +141,7 @@ def train():
 
 
 train()
-num_epochs = 10000
+num_epochs = 5000
 for epoch in range(num_epochs):
     model.train()
     total_loss = 0
