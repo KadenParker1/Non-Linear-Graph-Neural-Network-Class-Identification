@@ -38,15 +38,22 @@ def generate_polar(f, num_samples, num_classes, noise):
     return X, y
 
 
+def generate_ssbm(num_samples,num_classes,lambdav,degree,noise):
+    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
+    n=num_samples
+    d=degree
+    p_intra=(d+lambdav*np.sqrt(d))/n
+    p_inter =(d-lambdav*np.sqrt(d))/n
 
 
 
-def generate_graph(f, num_samples, num_classes,noise):
+def generate_graph(f, num_samples, num_classes,noise, lambdav, degree):
     X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
 
-    # Generate SBM-like edges within each class
+    
     adjacency_matrix = np.zeros((num_samples, num_samples))
-    p_intra, p_inter = 0.01, 0.001  # Intra and inter class connection probabilities
+    p_intra=(degree+lambdav*np.sqrt(degree))/num_samples
+    p_inter =(degree-lambdav*np.sqrt(degree))/num_samples
     
     for i in range(num_samples):
         for j in range(i + 1, num_samples):
@@ -58,16 +65,21 @@ def generate_graph(f, num_samples, num_classes,noise):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
-num_classes=2
-num_samples = 5000
-noise=.05
-f = lambda t: (1+9/10*np.cos(8*t))*(1+1/10*np.cos(24*t))*(9/10+1/10*np.cos(200*t))*(1+np.sin(t))
-features, adjacency_matrix, labels = generate_graph(f,num_samples=num_samples,num_classes=num_classes, noise=noise)
+
+
+
+num_classes=3
+num_samples = 1000
+noise=.2
+degree=10
+lambdav=3
+f = lambda t: 1
+features, adjacency_matrix, labels = generate_graph(f,num_samples=num_samples,num_classes=num_classes, noise=noise,lambdav=lambdav,degree=degree )
 features_tensor = torch.tensor(features, dtype=torch.float)
 labels_tensor = torch.tensor(labels, dtype=torch.long)
 edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
 
-colors = ['red','blue','green','yellow']
+colors = ['red','cyan','magenta','blue','yellow','green']
 def visualize_graph(features, adjacency_matrix, labels):
     G = nx.from_numpy_array(adjacency_matrix)
     pos = {i: (features[i, 0], features[i, 1]) for i in range(len(features))}
@@ -168,6 +180,9 @@ def test(model,data):
         acc = correct / data.num_nodes  
     return acc
 
+# After training, evaluate the model on the entire graph data
+accuracy = test(model, graph_data)
+print(f'Node-wise Accuracy: {accuracy:.4f}')
 # After training, evaluate the model on the entire graph data
 accuracy = test(model, graph_data)
 print(f'Node-wise Accuracy: {accuracy:.4f}')
