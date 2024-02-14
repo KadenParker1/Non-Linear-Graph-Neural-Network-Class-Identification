@@ -70,10 +70,10 @@ def generate_graph(num_samples, num_classes,noise,f=lambda x:1, mode="polar"):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
-num_classes=5
+num_classes=2
 num_samples =5000
 noise=.05
-f = lambda x: 1
+f = lambda t: 1
 mode = "polar"
 features, adjacency_matrix, labels = generate_graph(num_samples,num_classes, noise, f, mode)
 features_tensor = torch.tensor(features, dtype=torch.float)
