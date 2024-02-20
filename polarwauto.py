@@ -11,6 +11,8 @@ import sys
 
 
 
+#Generate Features and thus classes of polar function
+
 def generate_polar(f, num_samples, num_classes, noise):
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
@@ -38,6 +40,8 @@ def generate_polar(f, num_samples, num_classes, noise):
     
     return X, y
 
+#Generate adjacency matrix SBM
+
 def generate_graph(f, num_samples, num_classes,noise,lambdav,degree):
     X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
 
@@ -56,6 +60,9 @@ def generate_graph(f, num_samples, num_classes,noise,lambdav,degree):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
+
+#Visualize the graph
+
 colors = ['red','blue','green','yellow','orange']
 def visualize_graph(features, adjacency_matrix, labels):
     G = nx.from_numpy_array(adjacency_matrix)
@@ -74,6 +81,8 @@ def visualize_graph(features, adjacency_matrix, labels):
     plt.axis('off')  # Turn off the axis numbers and ticks
     plt.show()
 
+#Defining GNN tasked with identifying the class for a given node 
+
 class GCN(torch.nn.Module):
     def __init__(self, num_features, num_classes):
         super(GCN, self).__init__()
@@ -86,6 +95,8 @@ class GCN(torch.nn.Module):
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)
+
+#Train the GNN
 
 def train(model,optimizer,data_loader,num_epochs):
     for epoch in range(num_epochs):
@@ -104,6 +115,8 @@ def train(model,optimizer,data_loader,num_epochs):
         if epoch%100==0:
             print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
 
+#Tests to find the nodewise accuracy
+
 def test(model,data):
     model.eval()
     with torch.no_grad():  
@@ -114,11 +127,14 @@ def test(model,data):
         acc = correct / data.num_nodes  
     return acc
 
+#Making a csv file to record the desired parameters
+
 results_file= 'experiment_results.csv'
 with open(results_file, mode='w',newline='') as file:
     writer=csv.writer(file)
     writer.writerow(['accuracy','lambdav','noise','num_samples','num_classes','epochs','degree'])
 
+#Makes Feature and Adjacency matrix to train a gnn on, tests it, and then records results in the csv file
 
 def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree):
     f = lambda t: 1
@@ -148,6 +164,9 @@ for lambdai in np.arange(-3, 3.1, 0.01):
 # run_experiment(5000,.25,1000,2,-3,10)
 
 
+
+
+#Not used just yet
 
 parameters= {
 'num_epochs':[1000,5000],

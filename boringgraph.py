@@ -11,12 +11,12 @@ import csv
 import sys
 
 
+#This code generates a linearly seperable graph. Adjacency matrix follows a SBM, and Feature Matrix is Gaussian. 
 
 
 
 
-
-
+#Generate Features and thus classes
 def generate_gaussian(num_samples, num_classes, noise):
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
@@ -35,6 +35,8 @@ def generate_gaussian(num_samples, num_classes, noise):
         y[start_index:end_index] = class_index
     
     return X, y
+
+#Generate Adjacency Matrix
 
 def generate_boring_graph(num_samples, num_classes,noise,lambdav,degree):
     X, y = generate_gaussian(num_samples=num_samples, num_classes=num_classes, noise=noise)
@@ -60,6 +62,9 @@ def generate_boring_graph(num_samples, num_classes,noise,lambdav,degree):
 num_classes=2
 features, adjacency_matrix,labels =generate_boring_graph(1000,num_classes,.25,3,10)
 colors = ['red','cyan','magenta','blue','yellow','green']
+
+#Visualize the graph
+
 def visualize_graph(features, adjacency_matrix,labels):
     G = nx.from_numpy_array(adjacency_matrix)
     pos = {i: (features[i, 0], features[i, 1]) for i in range(len(features))}
