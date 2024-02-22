@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import convolve
 import pandas as pd
+import seaborn as sns
 
 # Reads in the csvfile as data
 filename = 'concatenated_comp_idsgood.csv'
@@ -29,10 +30,12 @@ z = convolve(z,kernel)/kernel.sum()
 z = convolve(z,kernel)/kernel.sum()
 
 # Plot heatmap
-plt.pcolormesh(x,y,z,vmin=.5,vmax=1)
+plt.pcolormesh(x,y,z,vmin=.5,vmax=1,cmap="coolwarm")
 cbar = plt.colorbar()
 cbar.set_label("Accuracy",rotation=270)
 plt.xlabel("Lambda")
-plt.ylabel("Degree")
+plt.ylabel("Radius")
 plt.title("Nodewise Accuracy")
+plt.yticks(np.arange(0,11))
+plt.xticks(np.linspace(-3,3,16),rotation=90)
 plt.show()
