@@ -5,7 +5,7 @@ import pandas as pd
 import seaborn as sns
 
 # Reads in the csvfile as data
-filename = 'concatenated_comp_idsgood.csv'
+filename = 'TestRuns/128hiddenlayers.csv'
 data = pd.read_csv(filename)
 
 # Degree on y-axis,lambda on x-axis, accuracy as heat colors
@@ -19,13 +19,28 @@ z = z.reshape(n//row_size,row_size)
 x = x.reshape(n//row_size,row_size)
 y = y.reshape(n//row_size,row_size)
 
-# Possible TODO
 # Smoothing the data with a gaussian filter
+# 3 x 3
+# kernel = np.array([[1,2,1],
+#                    [2,4,2],
+#                    [1,2,1]])
+
+# 5 x 5
 kernel = np.array([[1,4,7,4,1],
                    [4,16,26,16,4],
                    [7,26,41,26,7],
                    [4,16,26,16,4],
                    [1,4,7,4,1]])
+
+# 7 x 7
+# kernel = np.array([[0,0,1,2,1,0,0],
+#                    [0,3,13,22,13,3,0],
+#                    [1,13,59,97,59,13,1],
+#                    [2,22,97,159,97,22,2],
+#                    [1,13,59,97,59,13,1],
+#                    [0,3,13,22,13,3,0],
+#                    [0,0,1,2,1,0,0],])
+
 z = convolve(z,kernel)/kernel.sum()
 z = convolve(z,kernel)/kernel.sum()
 
