@@ -15,7 +15,8 @@ def generate_polar(f, num_samples, num_classes, noise):
     y = np.zeros(num_samples, dtype=int)
     
     samples_per_class = num_samples // num_classes
-    radii = np.linspace(1, num_classes, num_classes) 
+    radii = np.linspace(1, num_classes, num_classes)
+    print(radii)
     
     for class_index in range(num_classes):
         start_index = class_index * samples_per_class
@@ -75,6 +76,7 @@ degree=10
 lambdav=3
 f = lambda t: 1
 features, adjacency_matrix, labels = generate_graph(f,num_samples=num_samples,num_classes=num_classes, noise=noise,lambdav=lambdav,degree=degree )
+
 features_tensor = torch.tensor(features, dtype=torch.float)
 labels_tensor = torch.tensor(labels, dtype=torch.long)
 edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)

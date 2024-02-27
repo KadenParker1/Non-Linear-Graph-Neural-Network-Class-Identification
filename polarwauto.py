@@ -1,16 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import bernoulli, norm
 import networkx as nx
 import torch
 from torch_geometric.data import Data
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from torch_geometric.data import DataLoader
+import csv
+import sys
 
 
 
-def generate_polar(f, num_samples, num_classes, noise):
+def generate_polar(f, num_samples, num_classes, noise, seperation):
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
     
@@ -24,7 +25,7 @@ def generate_polar(f, num_samples, num_classes, noise):
             end_index = num_samples
         
         for i in range(start_index,end_index):
-            radius=np.random.normal(loc=radii[class_index],scale=noise)
+            radius=np.random.normal(loc=seperation*radii[class_index],scale=noise)
             angle=np.random.uniform(low=0,high=2*np.pi)
             X[i, 0] = radius * f(angle) * np.cos(angle)
             X[i, 1] = radius * f(angle) * np.sin(angle)
@@ -37,18 +38,8 @@ def generate_polar(f, num_samples, num_classes, noise):
     
     return X, y
 
-
-def generate_ssbm(num_samples,num_classes,lambdav,degree,noise):
-    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
-    n=num_samples
-    d=degree
-    p_intra=(d+lambdav*np.sqrt(d))/n
-    p_inter =(d-lambdav*np.sqrt(d))/n
-
-
-
-def generate_graph(f, num_samples, num_classes,noise, lambdav, degree):
-    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
+def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,seperation):
+    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise,seperation=seperation)
 
     
     adjacency_matrix = np.zeros((num_samples, num_samples))
@@ -65,21 +56,7 @@ def generate_graph(f, num_samples, num_classes,noise, lambdav, degree):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
-
-
-
-num_classes=3
-num_samples = 1000
-noise=.2
-degree=10
-lambdav=3
-f = lambda t: 1
-features, adjacency_matrix, labels = generate_graph(f,num_samples=num_samples,num_classes=num_classes, noise=noise,lambdav=lambdav,degree=degree )
-features_tensor = torch.tensor(features, dtype=torch.float)
-labels_tensor = torch.tensor(labels, dtype=torch.long)
-edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
-
-colors = ['red','cyan','magenta','blue','yellow','green']
+colors = ['red','blue','green','yellow','orange']
 def visualize_graph(features, adjacency_matrix, labels):
     G = nx.from_numpy_array(adjacency_matrix)
     pos = {i: (features[i, 0], features[i, 1]) for i in range(len(features))}
@@ -97,36 +74,11 @@ def visualize_graph(features, adjacency_matrix, labels):
     plt.axis('off')  # Turn off the axis numbers and ticks
     plt.show()
 
-visualize_graph(features, adjacency_matrix, labels)
-
-
-# def visualize_graph(features, adjacency_matrix, labels):
-#     plt.figure(figsize=(10, 8))
-#     scatter = plt.scatter(features[:, 0], features[:, 1], c=labels, cmap='viridis', alpha=0.6, edgecolors='w')
-    
-#     num_nodes = len(features)
-#     for i in range(num_nodes):
-#         for j in range(i + 1, num_nodes):
-#             if adjacency_matrix[i, j] == 1:
-#                 plt.plot([features[i, 0], features[j, 0]], [features[i, 1], features[j, 1]], 'silver', lw=0.3, alpha=0.5)
-    
-#     plt.title('Graph')
-#     plt.xlabel('Feature 1')
-#     plt.ylabel('Feature 2')
-#     # plt.colorbar(scatter, label='Class')
-#     plt.show()
-# visualize_graph(features, adjacency_matrix, labels)
-
-
-
-graph_data = Data(x=features_tensor, edge_index=edge_index, y=labels_tensor)
-
-
 class GCN(torch.nn.Module):
     def __init__(self, num_features, num_classes):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(num_features, 16)
-        self.conv2 = GCNConv(16, num_classes)
+        self.conv1 = GCNConv(num_features, 128)
+        self.conv2 = GCNConv(128, num_classes)
     
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -135,40 +87,22 @@ class GCN(torch.nn.Module):
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)
 
+def train(model,optimizer,data_loader,num_epochs):
+    for epoch in range(num_epochs):
+        model.train()
+        total_loss = 0
+        for data in data_loader:
+            optimizer.zero_grad()
+            out = model(data)
+            loss = F.cross_entropy(out, data.y)
+            loss.backward()
+            optimizer.step()
 
-model = GCN(num_features=2, num_classes=num_classes)
-optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
-criterion = torch.nn.NLLLoss()
-
-data_loader = DataLoader([graph_data], batch_size=32, shuffle=True)
-
-def train():
-    model.train()
-    for data in data_loader:
-        optimizer.zero_grad()
-        out = model(data)
-        loss = criterion(out,data.y)
-        loss.backward()
-        optimizer.step()
-
-
-train()
-num_epochs = 5000
-for epoch in range(num_epochs):
-    model.train()
-    total_loss = 0
-    for data in data_loader:
-        optimizer.zero_grad()
-        out = model(data)
-        loss = F.cross_entropy(out, data.y)
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item() * data.num_nodes  
-    
-    total_loss /= len(data_loader.dataset)  
-    if epoch%50==0:
-        print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
+            total_loss += loss.item() * data.num_nodes  
+        
+        total_loss /= len(data_loader.dataset)  
+        if epoch%100==0:
+            print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
 
 def test(model,data):
     model.eval()
@@ -180,9 +114,51 @@ def test(model,data):
         acc = correct / data.num_nodes  
     return acc
 
-# After training, evaluate the model on the entire graph data
-accuracy = test(model, graph_data)
-print(f'Node-wise Accuracy: {accuracy:.4f}')
-# After training, evaluate the model on the entire graph data
-accuracy = test(model, graph_data)
-print(f'Node-wise Accuracy: {accuracy:.4f}')
+
+comp_id=int(sys.argv[1])
+smallrad=comp_id/10
+results_file= f'comp_id_{comp_id}.csv'
+
+
+with open(results_file, mode='w',newline='') as file:
+    writer=csv.writer(file)
+    writer.writerow(['accuracy','lambdav','radid'])
+
+
+
+def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,seperation):
+    f = lambda t: 1
+    features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,seperation)
+    model = GCN(num_features=2, num_classes=num_classes)
+    features_tensor = torch.tensor(features, dtype=torch.float)
+    labels_tensor = torch.tensor(labels, dtype=torch.long)
+    edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
+    graph_data = Data(x=features_tensor, edge_index=edge_index, y=labels_tensor)
+    optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
+    criterion = torch.nn.NLLLoss()
+    data_loader = DataLoader([graph_data], batch_size=32, shuffle=True)
+    num_epochs = epochs
+    train(model,optimizer,data_loader,num_epochs)
+    accuracy = test(model,graph_data)
+    print(f'Node-wise Accuracy: {accuracy:.4f}')
+    with open(results_file, mode='a',newline='') as file:
+        writer=csv.writer(file)
+        writer.writerow([accuracy,lambdav,seperation])
+    return accuracy
+
+
+
+for lambdai in np.arange(-3,3,0.01):
+    tt=round(lambdai,3)
+    print(tt)
+    run_experiment(2000,1,1000,2,tt,10,smallrad)
+
+
+
+# for lambdai in np.arange(-3, 3.1, 0.01):
+#     for degreej in np.arange(8,12,1):
+#         run_experiment(400,.05,1000,2,lambdai,degreej)
+
+
+
+
