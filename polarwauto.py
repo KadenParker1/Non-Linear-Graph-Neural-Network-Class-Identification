@@ -109,9 +109,6 @@ class GCN(torch.nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-class SAGE(torch.nn.Module):
-    """
-    Pytorch_Geometric implementation of SAGE
 
 #Defining GNN tasked with identifying the class for a given node 
 
@@ -193,7 +190,6 @@ class GCN(torch.nn.Module):
         
 
 #Train the GNN
-
 
 def train(model,optimizer,data_loader,num_epochs):
     for epoch in range(num_epochs):
