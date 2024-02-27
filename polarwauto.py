@@ -11,9 +11,9 @@ import csv
 import sys
 from boringgraph import bfeatures, badjacency, blabels
 
-radid=1
+seperation=1
 
-def generate_polar(f, num_samples, num_classes, noise,radid):
+def generate_polar(f, num_samples, num_classes, noise,seperation):
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
     
@@ -27,7 +27,7 @@ def generate_polar(f, num_samples, num_classes, noise,radid):
             end_index = num_samples
         
         for i in range(start_index,end_index):
-            radius=np.random.normal(loc=radid*radii[class_index],scale=noise)
+            radius=np.random.normal(loc=seperation*radii[class_index],scale=noise)
             angle=np.random.uniform(low=0,high=2*np.pi)
             X[i, 0] = radius * f(angle) * np.cos(angle)
             X[i, 1] = radius * f(angle) * np.sin(angle)
@@ -44,8 +44,8 @@ def generate_polar(f, num_samples, num_classes, noise,radid):
 
  
 
-def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,radid):
-    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise,radid=radid)
+def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,seperation):
+    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise,seperation=seperation)
 
     
     adjacency_matrix = np.zeros((num_samples, num_samples))
@@ -109,6 +109,67 @@ class GCN(torch.nn.Module):
         return F.log_softmax(x, dim=1)
 
 
+class SAGE(torch.nn.Module):
+    """
+    Pytorch_Geometric implementation of SAGE
+    """
+    def __init__(self, in_feat, hid_feat, out_feat, log_soft = True):
+        """
+        Constructor of class
+        """
+        super().__init__()
+        self.conv1 = SAGEConv(in_feat, hid_feat)
+        #self.convh = GCNConv(hid_feat,hid_feat)
+        self.conv2 = SAGEConv(hid_feat, out_feat)
+        self.activation = nn.ReLU()
+        self.log_soft = log_soft
+        #self.dropout = nn.Dropout(p=.4)
+    def forward(self, x,edge_index):
+        """
+        Runs forward propagation
+        """
+        x = self.activation(self.conv1(x, edge_index))
+        x = F.dropout(x, training= self.training)
+        #x = self.activation(self.convh(x,edge_index))
+        #x = F.dropout(x,training=self.training)
+        x = self.conv2(x, edge_index)
+        if self.log_soft is True:
+            return F.log_softmax(x,dim=1)
+        else:
+            return x
+    def string():
+        return "SAGE"
+
+class GAT(torch.nn.Module):
+    """
+    Pytorch_Geometric implementation of GAT
+    """
+    def __init__(self, in_feat, hid_feat, out_feat, log_soft = True):
+        """
+        Constructor of class
+        """
+        super().__init__()
+        self.conv1 = GATConv(in_feat, hid_feat)
+        #self.convh = GCNConv(hid_feat,hid_feat)
+        self.conv2 = GATConv(hid_feat, out_feat)
+        self.activation = nn.ReLU()
+        self.log_soft = log_soft
+        #self.dropout = nn.Dropout(p=.4)
+    def forward(self, x,edge_index):
+        """
+        Runs forward propagation
+        """
+        x = self.activation(self.conv1(x, edge_index))
+        x = F.dropout(x, training= self.training)
+        #x = self.activation(self.convh(x,edge_index))
+        #x = F.dropout(x,training=self.training)
+        x = self.conv2(x, edge_index)
+        if self.log_soft is True:
+            return F.log_softmax(x,dim=1)
+        else:
+            return x
+    def string():
+        return "GAT"
 # model = GCN(num_features=2, num_classes=num_classes)
 # optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
 criterion = torch.nn.NLLLoss()
@@ -156,13 +217,13 @@ f = lambda t: 1
 results_file= 'experiment_results.csv'
 with open(results_file, mode='w',newline='') as file:
     writer=csv.writer(file)
-    writer.writerow(['accuracy','lambdav','noise','num_samples','num_classes','epochs','degree'])
+    writer.writerow(['accuracy','lambdav','noise','num_samples','num_classes','epochs','degree','seperation'])
 
 
-def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,radid):
-    f = lambda t: 1
+def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,seperation):
+    f = lambda t: 1+2*t
     # features,adjacency_matrix,labels=bfeatures, badjacency, blabels
-    features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,radid)
+    features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,seperation)
     model = GCN(num_features=2, num_classes=num_classes)
     features_tensor = torch.tensor(features, dtype=torch.float)
     labels_tensor = torch.tensor(labels, dtype=torch.long)
@@ -177,26 +238,21 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,radid):
     print(f'Node-wise Accuracy: {accuracy:.4f}')
     with open(results_file, mode='a',newline='') as file:
         writer=csv.writer(file)
-        writer.writerow([accuracy,lambdav])
+        writer.writerow([accuracy,lambdav,seperation])
     return accuracy
 
 
 
-for i in np.arange(-3, 3, 1):
-    print(i)
-    run_experiment(500,.05,1000,num_classes=2,lambdav=i,degree=10,radid=6)
+# for i in np.arange(-3, 3, 1):
+#     print(i)
+#     run_experiment(5000,1,1000,num_classes=2,lambdav=i,degree=10,seperation=6)
+
+run_experiment(3000,.01,1000,num_classes=2,lambdav=3,degree=10,seperation=10)
 
 
 # run_experiment(500,1,1000,2,-3,10)
 
 
-
-parameters= {
-'num_epochs':[1000,5000],
-'noise':[0,1],
-'num_samples':[5000,10000],
-'num_classes':[2,5]
-}
 
 # def fill_it_out():
 #     for 1000*samples in paramters['num_samples']:
