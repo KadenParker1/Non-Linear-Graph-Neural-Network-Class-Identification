@@ -83,6 +83,68 @@ def visualize_graph(features, adjacency_matrix, labels):
 
 #Defining GNN tasked with identifying the class for a given node 
 
+class GAT(torch.nn.Module):
+    """
+    Pytorch_Geometric implementation of GAT
+    """
+    def __init__(self, in_feat, hid_feat, out_feat, log_soft = True):
+        """
+        Constructor of class
+        """
+        super().__init__()
+        self.conv1 = GATConv(in_feat, hid_feat)
+        #self.convh = GCNConv(hid_feat,hid_feat)
+        self.conv2 = GATConv(hid_feat, out_feat)
+        self.activation = nn.ReLU()
+        self.log_soft = log_soft
+        #self.dropout = nn.Dropout(p=.4)
+    def forward(self, x,edge_index):
+        """
+        Runs forward propagation
+        """
+        x = self.activation(self.conv1(x, edge_index))
+        x = F.dropout(x, training= self.training)
+        #x = self.activation(self.convh(x,edge_index))
+        #x = F.dropout(x,training=self.training)
+        x = self.conv2(x, edge_index)
+        if self.log_soft is True:
+            return F.log_softmax(x,dim=1)
+        else:
+            return x
+    def string():
+        return "GAT"
+
+class SAGE(torch.nn.Module):
+    """
+    Pytorch_Geometric implementation of SAGE
+    """
+    def __init__(self, in_feat, hid_feat, out_feat, log_soft = True):
+        """
+        Constructor of class
+        """
+        super().__init__()
+        self.conv1 = SAGEConv(in_feat, hid_feat)
+        #self.convh = GCNConv(hid_feat,hid_feat)
+        self.conv2 = SAGEConv(hid_feat, out_feat)
+        self.activation = nn.ReLU()
+        self.log_soft = log_soft
+        #self.dropout = nn.Dropout(p=.4)
+    def forward(self, x,edge_index):
+        """
+        Runs forward propagation
+        """
+        x = self.activation(self.conv1(x, edge_index))
+        x = F.dropout(x, training= self.training)
+        #x = self.activation(self.convh(x,edge_index))
+        #x = F.dropout(x,training=self.training)
+        x = self.conv2(x, edge_index)
+        if self.log_soft is True:
+            return F.log_softmax(x,dim=1)
+        else:
+            return x
+    def string():
+        return "SAGE"
+
 class GCN(torch.nn.Module):
     def __init__(self, num_features, num_classes):
         super(GCN, self).__init__()
@@ -95,6 +157,7 @@ class GCN(torch.nn.Module):
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)
+        
 
 #Train the GNN
 
