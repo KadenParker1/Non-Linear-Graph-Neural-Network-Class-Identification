@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import convolve
 import pandas as pd
-import seaborn as sns
 
 # Reads in the csvfile as data
 filename = 'TestRuns/128hiddenlayers.csv'
