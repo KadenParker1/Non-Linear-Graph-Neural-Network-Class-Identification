@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 import torch
+import torch.nn as nn
 from torch_geometric.data import Data
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv, GATConv, SAGEConv
 from torch_geometric.data import DataLoader
 import csv
 import sys
@@ -96,10 +97,10 @@ def visualize_graph(features, adjacency_matrix, labels):
 
 
 class GCN(torch.nn.Module):
-    def __init__(self, num_features, num_classes):
+    def __init__(self, num_features,dimension, num_classes):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(num_features, 16)
-        self.conv2 = GCNConv(16, num_classes)
+        self.conv1 = GCNConv(num_features, dimension)
+        self.conv2 = GCNConv(dimension, num_classes)
     
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -107,6 +108,9 @@ class GCN(torch.nn.Module):
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)
+    
+    def string():
+        return "GCN"
 
 
 
@@ -128,10 +132,11 @@ class GAT(torch.nn.Module):
         self.activation = nn.ReLU()
         self.log_soft = log_soft
         #self.dropout = nn.Dropout(p=.4)
-    def forward(self, x,edge_index):
+    def forward(self, data):
         """
         Runs forward propagation
         """
+        x, edge_index = data.x, data.edge_index
         x = self.activation(self.conv1(x, edge_index))
         x = F.dropout(x, training= self.training)
         #x = self.activation(self.convh(x,edge_index))
@@ -159,10 +164,12 @@ class SAGE(torch.nn.Module):
         self.activation = nn.ReLU()
         self.log_soft = log_soft
         #self.dropout = nn.Dropout(p=.4)
-    def forward(self, x,edge_index):
+
+    def forward(self, data):
         """
         Runs forward propagation
         """
+        x, edge_index = data.x, data.edge_index
         x = self.activation(self.conv1(x, edge_index))
         x = F.dropout(x, training= self.training)
         #x = self.activation(self.convh(x,edge_index))
@@ -174,19 +181,6 @@ class SAGE(torch.nn.Module):
             return x
     def string():
         return "SAGE"
-
-class GCN(torch.nn.Module):
-    def __init__(self, num_features, num_classes):
-        super(GCN, self).__init__()
-        self.conv1 = GCNConv(num_features, 16)
-        self.conv2 = GCNConv(16, num_classes)
-    
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
-        x = F.relu(self.conv1(x, edge_index))
-        x = F.dropout(x, training=self.training)
-        x = self.conv2(x, edge_index)
-        return F.log_softmax(x, dim=1)
         
 
 #Train the GNN
@@ -205,7 +199,7 @@ def train(model,optimizer,data_loader,num_epochs):
             total_loss += loss.item() * data.num_nodes  
         
         total_loss /= len(data_loader.dataset)  
-        if epoch%100==0:
+        if (epoch+1)%1000==0:
             print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
 
 
@@ -232,11 +226,12 @@ with open(results_file, mode='w',newline='') as file:
     writer.writerow(['accuracy','lambdav','noise','num_samples','num_classes','epochs','degree','seperation'])
 
 
-def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,seperation):
+def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,seperation,arch=GCN):
     f = lambda t: 1+2*t
     # features,adjacency_matrix,labels=bfeatures, badjacency, blabels
     features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,seperation)
-    model = GCN(num_features=2, num_classes=num_classes)
+    # model = GCN(num_features=2, num_classes=num_classes)
+    model = arch(2,16,num_classes)
     features_tensor = torch.tensor(features, dtype=torch.float)
     labels_tensor = torch.tensor(labels, dtype=torch.long)
     edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
@@ -259,7 +254,11 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,seperatio
 #     print(i)
 #     run_experiment(5000,1,1000,num_classes=2,lambdav=i,degree=10,seperation=6)
 
-run_experiment(3000,.01,1000,num_classes=2,lambdav=3,degree=10,seperation=10)
+archs = [GCN,GAT,SAGE]
+for arch in archs:
+    print(arch.string())
+    run_experiment(3000,1,1000,num_classes=2,lambdav=0,degree=10,seperation=5,arch=arch)
+
 
 
 # run_experiment(500,1,1000,2,-3,10)
