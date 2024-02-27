@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import bernoulli, norm
 import networkx as nx
 import torch
 from torch_geometric.data import Data
@@ -9,11 +8,9 @@ from torch_geometric.nn import GCNConv
 from torch_geometric.data import DataLoader
 import csv
 import sys
-from boringgraph import bfeatures, badjacency, blabels
-
-seperation=1
 
 def generate_polar(f, num_samples, num_classes, noise,seperation):
+
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
     
@@ -27,6 +24,7 @@ def generate_polar(f, num_samples, num_classes, noise,seperation):
             end_index = num_samples
         
         for i in range(start_index,end_index):
+
             radius=np.random.normal(loc=seperation*radii[class_index],scale=noise)
             angle=np.random.uniform(low=0,high=2*np.pi)
             X[i, 0] = radius * f(angle) * np.cos(angle)
@@ -41,11 +39,10 @@ def generate_polar(f, num_samples, num_classes, noise,seperation):
     return X, y
 
 
-
- 
-
 def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,seperation):
     X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise,seperation=seperation)
+
+#Generate adjacency matrix SBM
 
     
     adjacency_matrix = np.zeros((num_samples, num_samples))
@@ -71,6 +68,8 @@ f = lambda t: 1+2*t
 # features_tensor = torch.tensor(features, dtype=torch.float)
 # labels_tensor = torch.tensor(labels, dtype=torch.long)
 # edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
+#Visualize the graph
+
 
 colors = ['red','blue','green','yellow','orange']
 def visualize_graph(features, adjacency_matrix, labels):
@@ -90,6 +89,7 @@ def visualize_graph(features, adjacency_matrix, labels):
     plt.axis('off')  # Turn off the axis numbers and ticks
     plt.show()
 
+
 # visualize_graph(features, adjacency_matrix, labels)
 
 # graph_data = Data(x=features_tensor, edge_index=edge_index, y=labels_tensor)
@@ -108,6 +108,44 @@ class GCN(torch.nn.Module):
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)
 
+
+class SAGE(torch.nn.Module):
+    """
+    Pytorch_Geometric implementation of SAGE
+
+#Defining GNN tasked with identifying the class for a given node 
+
+class GAT(torch.nn.Module):
+    """
+    Pytorch_Geometric implementation of GAT
+
+    """
+    def __init__(self, in_feat, hid_feat, out_feat, log_soft = True):
+        """
+        Constructor of class
+        """
+        super().__init__()
+        self.conv1 = GATConv(in_feat, hid_feat)
+        #self.convh = GCNConv(hid_feat,hid_feat)
+        self.conv2 = GATConv(hid_feat, out_feat)
+        self.activation = nn.ReLU()
+        self.log_soft = log_soft
+        #self.dropout = nn.Dropout(p=.4)
+    def forward(self, x,edge_index):
+        """
+        Runs forward propagation
+        """
+        x = self.activation(self.conv1(x, edge_index))
+        x = F.dropout(x, training= self.training)
+        #x = self.activation(self.convh(x,edge_index))
+        #x = F.dropout(x,training=self.training)
+        x = self.conv2(x, edge_index)
+        if self.log_soft is True:
+            return F.log_softmax(x,dim=1)
+        else:
+            return x
+    def string():
+        return "GAT"
 
 class SAGE(torch.nn.Module):
     """
@@ -140,44 +178,22 @@ class SAGE(torch.nn.Module):
     def string():
         return "SAGE"
 
-class GAT(torch.nn.Module):
-    """
-    Pytorch_Geometric implementation of GAT
-    """
-    def __init__(self, in_feat, hid_feat, out_feat, log_soft = True):
-        """
-        Constructor of class
-        """
-        super().__init__()
-        self.conv1 = GATConv(in_feat, hid_feat)
-        #self.convh = GCNConv(hid_feat,hid_feat)
-        self.conv2 = GATConv(hid_feat, out_feat)
-        self.activation = nn.ReLU()
-        self.log_soft = log_soft
-        #self.dropout = nn.Dropout(p=.4)
-    def forward(self, x,edge_index):
-        """
-        Runs forward propagation
-        """
-        x = self.activation(self.conv1(x, edge_index))
-        x = F.dropout(x, training= self.training)
-        #x = self.activation(self.convh(x,edge_index))
-        #x = F.dropout(x,training=self.training)
+class GCN(torch.nn.Module):
+    def __init__(self, num_features, num_classes):
+        super(GCN, self).__init__()
+        self.conv1 = GCNConv(num_features, 16)
+        self.conv2 = GCNConv(16, num_classes)
+    
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = F.relu(self.conv1(x, edge_index))
+        x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
-        if self.log_soft is True:
-            return F.log_softmax(x,dim=1)
-        else:
-            return x
-    def string():
-        return "GAT"
-# model = GCN(num_features=2, num_classes=num_classes)
-# optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
-criterion = torch.nn.NLLLoss()
+        return F.log_softmax(x, dim=1)
+        
 
+#Train the GNN
 
-
-
-num_epochs = 5000
 
 def train(model,optimizer,data_loader,num_epochs):
     for epoch in range(num_epochs):
@@ -196,6 +212,10 @@ def train(model,optimizer,data_loader,num_epochs):
         if epoch%100==0:
             print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
 
+
+#Tests to find the nodewise accuracy
+
+
 def test(model,data):
     model.eval()
     with torch.no_grad():  
@@ -206,17 +226,13 @@ def test(model,data):
         acc = correct / data.num_nodes  
     return acc
 
-# After training, evaluate the model on the entire graph data
-# accuracy = test(model, graph_data)
+#Making a csv file to record the desired parameters
 
-
-
-
-f = lambda t: 1
 
 results_file= 'experiment_results.csv'
 with open(results_file, mode='w',newline='') as file:
     writer=csv.writer(file)
+
     writer.writerow(['accuracy','lambdav','noise','num_samples','num_classes','epochs','degree','seperation'])
 
 
@@ -259,3 +275,4 @@ run_experiment(3000,.01,1000,num_classes=2,lambdav=3,degree=10,seperation=10)
 #         accuracy=run_experiment(epochs,lr,noise,samples,classes,homophily,heterophily)
 #         writer.writerow([epochs, lr, noise, samples, classes, accuracy])
 #         print(f'Done: epochs={epochs}, lr={lr}, noise={noise}, samples={samples}, classes={classes}, accuracy={accuracy}')
+
