@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import bernoulli, norm
 import networkx as nx
 import torch
 from torch_geometric.data import Data
@@ -9,7 +10,7 @@ from torch_geometric.data import DataLoader
 
 
 
-def generate_multi_concentric_circles(num_samples, num_classes, noise):
+def generate_func(f,num_samples, num_classes, noise):
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
     
@@ -23,10 +24,10 @@ def generate_multi_concentric_circles(num_samples, num_classes, noise):
             end_index = num_samples
         
         for i in range(start_index,end_index):
-            radius=np.random.normal(loc=radii[class_index],scale=noise)
-            angle=np.random.uniform(low=0,high=2*np.pi)
-            X[i, 0] = radius * np.cos(angle)
-            X[i, 1] = radius * np.sin(angle)
+            shift=np.random.normal(loc=radii[class_index],scale=noise)
+            dom=np.random.uniform(low=-5,high=5)
+            X[i, 0] = shift * dom
+            X[i, 1] = shift * f(dom)
             y[i] = class_index
         # angles = np.random.uniform(low=0, high=2*np.pi, size=(end_index - start_index,))
         # radii_noise = np.random.normal(loc=radii[class_index], scale=noise, size=(end_index - start_index,))
@@ -40,8 +41,8 @@ def generate_multi_concentric_circles(num_samples, num_classes, noise):
 
 
 
-def generate_graph(num_samples, num_classes,noise):
-    X, y = generate_multi_concentric_circles(num_samples=num_samples, num_classes=num_classes, noise=noise)
+def generate_graph(f, num_samples, num_classes,noise):
+    X, y = generate_func(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
 
     # Generate SBM-like edges within each class
     adjacency_matrix = np.zeros((num_samples, num_samples))
@@ -57,10 +58,11 @@ def generate_graph(num_samples, num_classes,noise):
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
     return X, adjacency_matrix, y
-num_classes=4
-num_samples =10000
+num_classes=2
+num_samples =1000
 noise=.05
-features, adjacency_matrix, labels = generate_graph(num_samples=num_samples,num_classes=num_classes, noise=noise)
+f = lambda x: np.exp(x)
+features, adjacency_matrix, labels = generate_graph(f, num_samples=num_samples,num_classes=num_classes, noise=noise)
 features_tensor = torch.tensor(features, dtype=torch.float)
 labels_tensor = torch.tensor(labels, dtype=torch.long)
 edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
@@ -72,7 +74,7 @@ def visualize_graph(features, adjacency_matrix, labels):
     for i, label in enumerate(labels):
         G.nodes[i]['label'] = label
     plt.figure(figsize=(10, 10))
-    color_map = [colors[label%(len(colors))] for label in labels]
+    color_map = [colors[label%4] for label in labels]
     nx.draw_networkx_nodes(G, pos, node_color=color_map, alpha=0.6, edgecolors='w')
     
     nx.draw_networkx_edges(G, pos, alpha=0.5)
@@ -84,7 +86,6 @@ def visualize_graph(features, adjacency_matrix, labels):
     plt.show()
 
 visualize_graph(features, adjacency_matrix, labels)
-
 
 
 # def visualize_graph(features, adjacency_matrix, labels):
@@ -144,7 +145,6 @@ num_epochs = 10000
 for epoch in range(num_epochs):
     model.train()
     total_loss = 0
-    total_nodes=0
     for data in data_loader:
         optimizer.zero_grad()
         out = model(data)
@@ -152,12 +152,11 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
-        total_loss += loss.item() * data.num_nodes 
-        total_nodes +=data.num_nodes 
+        total_loss += loss.item() * data.num_nodes  
     
-    average_loss=total_loss /total_nodes 
+    total_loss /= len(data_loader.dataset)  
     if epoch%50==0:
-        print(f'Epoch {epoch+1}/{num_epochs}, Average Loss: {average_loss:.4f}')
+        print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
 
 def test(model,data):
     model.eval()

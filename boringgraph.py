@@ -11,18 +11,29 @@ import csv
 import sys
 
 
+
+
+
+
+
+radid=6
+
+
 #This code generates a linearly seperable graph. Adjacency matrix follows a SBM, and Feature Matrix is Gaussian. 
 
 
 
 
 #Generate Features and thus classes
+
 def generate_gaussian(num_samples, num_classes, noise):
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
     
     samples_per_class = num_samples // num_classes
-    means=np.array([[0,0],[1,1]])
+
+    means=np.array([[radid/2,0],[-1*radid/2,0]])
+
     
     for class_index in range(num_classes):
         start_index = class_index * samples_per_class
@@ -36,7 +47,9 @@ def generate_gaussian(num_samples, num_classes, noise):
     
     return X, y
 
+
 #Generate Adjacency Matrix
+
 
 def generate_boring_graph(num_samples, num_classes,noise,lambdav,degree):
     X, y = generate_gaussian(num_samples=num_samples, num_classes=num_classes, noise=noise)
@@ -60,7 +73,8 @@ def generate_boring_graph(num_samples, num_classes,noise,lambdav,degree):
 
 
 num_classes=2
-features, adjacency_matrix,labels =generate_boring_graph(1000,num_classes,.25,3,10)
+
+bfeatures, badjacency, blabels =generate_boring_graph(1000,num_classes,1,3,10)
 colors = ['red','cyan','magenta','blue','yellow','green']
 
 #Visualize the graph
@@ -99,5 +113,8 @@ def visualize_graph(features, adjacency_matrix,labels):
     # plt.legend()
     # plt.grid(True)
     # plt.show()
-visualize_graph(features, adjacency_matrix, labels)
+
+
+#plotting the graph
+# visualize_graph(bfeatures, badjacency, blabels)
 

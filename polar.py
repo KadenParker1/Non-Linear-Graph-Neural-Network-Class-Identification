@@ -8,7 +8,10 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from torch_geometric.data import DataLoader
 
+
+
 #Generate Feature Matrix and Classes
+
 
 def generate_polar(f, num_samples, num_classes, noise):
     X = np.zeros((num_samples, 2))
@@ -37,6 +40,16 @@ def generate_polar(f, num_samples, num_classes, noise):
     
     return X, y
 
+
+
+def generate_ssbm(num_samples,num_classes,lambdav,degree,noise):
+    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
+    n=num_samples
+    d=degree
+    p_intra=(d+lambdav*np.sqrt(d))/n
+    p_inter =(d-lambdav*np.sqrt(d))/n
+
+
 #Generate Adjacency Matrix SBM like
 
 def generate_graph(f, num_samples, num_classes,noise, lambdav, degree):
@@ -58,11 +71,14 @@ def generate_graph(f, num_samples, num_classes,noise, lambdav, degree):
     
     return X, adjacency_matrix, y
 
+
+
 #Parameters for single use testing
 
 num_classes=3
 num_samples = 1000
 noise=1
+
 degree=10
 lambdav=3
 f = lambda t: 1
@@ -72,7 +88,9 @@ labels_tensor = torch.tensor(labels, dtype=torch.long)
 edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
 
 
+
 #Visualize the graph
+
 
 colors = ['red','cyan','magenta','blue','yellow','green']
 def visualize_graph(features, adjacency_matrix, labels):
@@ -95,11 +113,9 @@ def visualize_graph(features, adjacency_matrix, labels):
 visualize_graph(features, adjacency_matrix, labels)
 
 
-
 graph_data = Data(x=features_tensor, edge_index=edge_index, y=labels_tensor)
 
 #gcn trains on class identification
-
 
 class GCN(torch.nn.Module):
     def __init__(self, num_features, num_classes):
@@ -121,7 +137,9 @@ criterion = torch.nn.NLLLoss()
 
 data_loader = DataLoader([graph_data], batch_size=32, shuffle=True)
 
+
 #Train the GCN
+
 
 def train():
     model.train()
@@ -150,6 +168,7 @@ for epoch in range(num_epochs):
     total_loss /= len(data_loader.dataset)  
     if epoch%50==0:
         print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
+
 
 #Evaluate nodewise accuracy of trained gnn
 

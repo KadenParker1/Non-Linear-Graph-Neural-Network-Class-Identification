@@ -9,11 +9,8 @@ from torch_geometric.data import DataLoader
 import csv
 import sys
 
+def generate_polar(f, num_samples, num_classes, noise,seperation):
 
-
-#Generate Features and thus classes of polar function
-
-def generate_polar(f, num_samples, num_classes, noise):
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
     
@@ -27,7 +24,8 @@ def generate_polar(f, num_samples, num_classes, noise):
             end_index = num_samples
         
         for i in range(start_index,end_index):
-            radius=np.random.normal(loc=radii[class_index],scale=noise)
+
+            radius=np.random.normal(loc=seperation*radii[class_index],scale=noise)
             angle=np.random.uniform(low=0,high=2*np.pi)
             X[i, 0] = radius * f(angle) * np.cos(angle)
             X[i, 1] = radius * f(angle) * np.sin(angle)
@@ -40,10 +38,11 @@ def generate_polar(f, num_samples, num_classes, noise):
     
     return X, y
 
-#Generate adjacency matrix SBM
 
-def generate_graph(f, num_samples, num_classes,noise,lambdav,degree):
-    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise)
+def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,seperation):
+    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise,seperation=seperation)
+
+#Generate adjacency matrix SBM
 
     
     adjacency_matrix = np.zeros((num_samples, num_samples))
@@ -61,7 +60,16 @@ def generate_graph(f, num_samples, num_classes,noise,lambdav,degree):
     
     return X, adjacency_matrix, y
 
+num_classes=2
+num_samples = 10000
+noise=.05
+f = lambda t: 1+2*t
+# features, adjacency_matrix, labels = generate_graph(f,num_samples=num_samples,num_classes=num_classes, noise=noise)
+# features_tensor = torch.tensor(features, dtype=torch.float)
+# labels_tensor = torch.tensor(labels, dtype=torch.long)
+# edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
 #Visualize the graph
+
 
 colors = ['red','blue','green','yellow','orange']
 def visualize_graph(features, adjacency_matrix, labels):
@@ -81,11 +89,36 @@ def visualize_graph(features, adjacency_matrix, labels):
     plt.axis('off')  # Turn off the axis numbers and ticks
     plt.show()
 
+
+# visualize_graph(features, adjacency_matrix, labels)
+
+# graph_data = Data(x=features_tensor, edge_index=edge_index, y=labels_tensor)
+
+
+class GCN(torch.nn.Module):
+    def __init__(self, num_features, num_classes):
+        super(GCN, self).__init__()
+        self.conv1 = GCNConv(num_features, 16)
+        self.conv2 = GCNConv(16, num_classes)
+    
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = F.relu(self.conv1(x, edge_index))
+        x = F.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index)
+        return F.log_softmax(x, dim=1)
+
+
+class SAGE(torch.nn.Module):
+    """
+    Pytorch_Geometric implementation of SAGE
+
 #Defining GNN tasked with identifying the class for a given node 
 
 class GAT(torch.nn.Module):
     """
     Pytorch_Geometric implementation of GAT
+
     """
     def __init__(self, in_feat, hid_feat, out_feat, log_soft = True):
         """
@@ -161,6 +194,7 @@ class GCN(torch.nn.Module):
 
 #Train the GNN
 
+
 def train(model,optimizer,data_loader,num_epochs):
     for epoch in range(num_epochs):
         model.train()
@@ -178,7 +212,9 @@ def train(model,optimizer,data_loader,num_epochs):
         if epoch%100==0:
             print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
 
+
 #Tests to find the nodewise accuracy
+
 
 def test(model,data):
     model.eval()
@@ -192,16 +228,18 @@ def test(model,data):
 
 #Making a csv file to record the desired parameters
 
+
 results_file= 'experiment_results.csv'
 with open(results_file, mode='w',newline='') as file:
     writer=csv.writer(file)
-    writer.writerow(['accuracy','lambdav','noise','num_samples','num_classes','epochs','degree'])
 
-#Makes Feature and Adjacency matrix to train a gnn on, tests it, and then records results in the csv file
+    writer.writerow(['accuracy','lambdav','noise','num_samples','num_classes','epochs','degree','seperation'])
 
-def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree):
-    f = lambda t: 1
-    features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree)
+
+def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,seperation):
+    f = lambda t: 1+2*t
+    # features,adjacency_matrix,labels=bfeatures, badjacency, blabels
+    features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,seperation)
     model = GCN(num_features=2, num_classes=num_classes)
     features_tensor = torch.tensor(features, dtype=torch.float)
     labels_tensor = torch.tensor(labels, dtype=torch.long)
@@ -216,24 +254,25 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree):
     print(f'Node-wise Accuracy: {accuracy:.4f}')
     with open(results_file, mode='a',newline='') as file:
         writer=csv.writer(file)
-        writer.writerow([accuracy,lambdav,degree])
+        writer.writerow([accuracy,lambdav,seperation])
     return accuracy
 
-for lambdai in np.arange(-3, 3.1, 0.01):
-    for degreej in np.arange(8,12,1):
-        run_experiment(400,.05,1000,2,lambdai,degreej)
 
 
-# run_experiment(5000,.25,1000,2,-3,10)
+# for i in np.arange(-3, 3, 1):
+#     print(i)
+#     run_experiment(5000,1,1000,num_classes=2,lambdav=i,degree=10,seperation=6)
+
+run_experiment(3000,.01,1000,num_classes=2,lambdav=3,degree=10,seperation=10)
+
+
+# run_experiment(500,1,1000,2,-3,10)
 
 
 
+# def fill_it_out():
+#     for 1000*samples in paramters['num_samples']:
+#         accuracy=run_experiment(epochs,lr,noise,samples,classes,homophily,heterophily)
+#         writer.writerow([epochs, lr, noise, samples, classes, accuracy])
+#         print(f'Done: epochs={epochs}, lr={lr}, noise={noise}, samples={samples}, classes={classes}, accuracy={accuracy}')
 
-#Not used just yet
-
-parameters= {
-'num_epochs':[1000,5000],
-'noise':[0,1],
-'num_samples':[5000,10000],
-'num_classes':[2,5]
-}

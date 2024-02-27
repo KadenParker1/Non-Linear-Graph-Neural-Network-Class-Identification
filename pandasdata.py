@@ -1,9 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 #Reads in the csvfile and plots
-
-
 filename = 'experiment_results.csv'
 data = pd.read_csv(filename)
 
