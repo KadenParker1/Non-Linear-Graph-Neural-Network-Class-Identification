@@ -3,7 +3,7 @@
 
 Generating synthetic graphs and then training GNNS on class identification for a given node in the graph. 
 
-Scripts in /src:
+Scripts in src/:
 
 - boringgraph.py creates linearly separable graph data
 
