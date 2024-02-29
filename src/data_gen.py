@@ -25,7 +25,7 @@ def generate_coords(f, num_samples, num_classes, noise,separation, mode="polar")
         X (ndarray num_classes,): positions of nodes with one entry per class
         y (ndarray): the class of each node
     """
-    
+
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
     
@@ -189,6 +189,8 @@ class SAGE(torch.nn.Module):
 #Train the GNN
 
 def train(model,optimizer,data_loader,num_epochs):
+
+    norms = {name:[] for name,_ in model.conv1.named_parameters()}
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0
@@ -203,10 +205,11 @@ def train(model,optimizer,data_loader,num_epochs):
         
         total_loss /= len(data_loader.dataset)
         for name, param in model.conv1.named_parameters():
-            print(f"{name}: {param.size()}")
-            print(param.data)
-        if (epoch+1)%1000==0:
+            norms[name].append(torch.sqrt(torch.sum(param.data**2)))
+
+        if (epoch+1)%100==0:
             print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
+    return norms
 
 
 #Tests to find the nodewise accuracy
@@ -243,23 +246,29 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separatio
     edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
     graph_data = Data(x=features_tensor, edge_index=edge_index, y=labels_tensor)
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
-    criterion = torch.nn.NLLLoss() # is this necessary?
     data_loader = DataLoader([graph_data], batch_size=32, shuffle=True)
     num_epochs = epochs
-    train(model,optimizer,data_loader,num_epochs)
+    norms = train(model,optimizer,data_loader,num_epochs)
     accuracy = test(model,graph_data)
     print(f'Node-wise Accuracy: {accuracy:.4f}')
     with open(results_file, mode='a',newline='') as file:
         writer=csv.writer(file)
         writer.writerow([accuracy,lambdav,separation])
+    
+    # Plotting norms
+    for key in norms:
+        plt.plot(norms[key],label=key)
+    plt.legend()
+    plt.show()
+
     return accuracy
 
 # Run some tests, if desired
 if __name__ == "__main__":
-    archs = [GCN,GAT,SAGE]
+    archs = [SAGE]
     for arch in archs:
         print(arch.string())
-        run_experiment(3000,1,1000,num_classes=2,lambdav=0,degree=10,separation=5,arch=arch)
+        run_experiment(5000,0,1000,num_classes=2,lambdav=3,degree=10,separation=5,arch=arch)
 
 
 # Do multiple tests and write to CSV (not recommended unless on supercomputer)
