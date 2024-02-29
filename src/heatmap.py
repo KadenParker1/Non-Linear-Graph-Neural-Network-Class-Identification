@@ -4,7 +4,7 @@ from scipy.ndimage import convolve
 import pandas as pd
 
 # Reads in the csvfile as data
-filename = 'TestRuns/128hiddenlayers.csv'
+filename = '../test_runs/experiment_results.csv'
 data = pd.read_csv(filename)
 
 # Degree on y-axis,lambda on x-axis, accuracy as heat colors

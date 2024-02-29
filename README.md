@@ -3,10 +3,14 @@
 
 Generating synthetic graphs and then training GNNS on class identification for a given node in the graph. 
 
+Scripts in /src:
 
-polar.py creates nonlinear graph data and trains a gnn on class identification for single uses
+- boringgraph.py creates linearly separable graph data
 
-polarwauto.py streamlines polar.py and is set up for running many times
+- data_gen.py creates nonlinear graph data and trains a gnn on class identification for single uses and writes the data into test_runs/
 
-boringgraph.py creates linearly seperable graph data
+- heatmap.py takes data from test_runs/ and generates a heatmap of GNN performance (TODO) Heatmaps are then saved in Images/
+
+- pandas_data.py simply plots csv data on a plot without the heatmap
+
 

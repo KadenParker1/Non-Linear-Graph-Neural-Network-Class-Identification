@@ -8,9 +8,8 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GATConv, SAGEConv
 from torch_geometric.data import DataLoader
 import csv
-import sys
 
-def generate_polar(f, num_samples, num_classes, noise,seperation):
+def generate_coords(f, num_samples, num_classes, noise,seperation, mode="polar"):
 
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
@@ -26,22 +25,25 @@ def generate_polar(f, num_samples, num_classes, noise,seperation):
         
         for i in range(start_index,end_index):
 
-            radius=np.random.normal(loc=seperation*radii[class_index],scale=noise)
-            angle=np.random.uniform(low=0,high=2*np.pi)
-            X[i, 0] = radius * f(angle) * np.cos(angle)
-            X[i, 1] = radius * f(angle) * np.sin(angle)
-            y[i] = class_index
-        # angles = np.random.uniform(low=0, high=2*np.pi, size=(end_index - start_index,))
-        # radii_noise = np.random.normal(loc=radii[class_index], scale=noise, size=(end_index - start_index,))
-        # X[start_index:end_index, 0] = radii_noise * np.cos(angles)
-        # X[start_index:end_index, 1] = radii_noise * np.sin(angles)
-        # y[start_index:end_index] = class_index
+            if mode == "polar":
+                radius=np.random.normal(loc=seperation*radii[class_index],scale=noise)
+                angle=np.random.uniform(low=0,high=2*np.pi)
+                X[i, 0] = radius * f(angle) * np.cos(angle)
+                X[i, 1] = radius * f(angle) * np.sin(angle)
+                y[i] = class_index
+
+            elif mode == "cartesian":
+                shift=np.random.normal(loc=seperation*radii[class_index],scale=noise)
+                dom=np.random.uniform(low=-5,high=5)
+                X[i, 0] = shift * dom
+                X[i, 1] = shift * f(dom)
+                y[i] = class_index
     
     return X, y
 
 
 def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,seperation):
-    X, y = generate_polar(f, num_samples=num_samples, num_classes=num_classes, noise=noise,seperation=seperation)
+    X, y = generate_coords(f, num_samples=num_samples, num_classes=num_classes, noise=noise,seperation=seperation)
 
 #Generate adjacency matrix SBM
 
@@ -61,17 +63,7 @@ def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,seperation):
     
     return X, adjacency_matrix, y
 
-num_classes=2
-num_samples = 10000
-noise=.05
-f = lambda t: 1+2*t
-# features, adjacency_matrix, labels = generate_graph(f,num_samples=num_samples,num_classes=num_classes, noise=noise)
-# features_tensor = torch.tensor(features, dtype=torch.float)
-# labels_tensor = torch.tensor(labels, dtype=torch.long)
-# edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
 #Visualize the graph
-
-
 colors = ['red','blue','green','yellow','orange']
 def visualize_graph(features, adjacency_matrix, labels):
     G = nx.from_numpy_array(adjacency_matrix)
@@ -84,18 +76,13 @@ def visualize_graph(features, adjacency_matrix, labels):
     
     nx.draw_networkx_edges(G, pos, alpha=0.5)
     
-    # plt.title('')
-    # plt.xlabel('Feature 1')
-    # plt.ylabel('Feature 2')
     plt.axis('off')  # Turn off the axis numbers and ticks
     plt.show()
 
 
-# visualize_graph(features, adjacency_matrix, labels)
-
-# graph_data = Data(x=features_tensor, edge_index=edge_index, y=labels_tensor)
-
-
+# GNN Architectures
+    
+# Standard GCN
 class GCN(torch.nn.Module):
     def __init__(self, num_features,dimension, num_classes):
         super(GCN, self).__init__()
@@ -149,6 +136,7 @@ class GAT(torch.nn.Module):
     def string():
         return "GAT"
 
+# Graph Sage with neighborhood feature aggregation
 class SAGE(torch.nn.Module):
     """
     Pytorch_Geometric implementation of SAGE
@@ -216,10 +204,10 @@ def test(model,data):
         acc = correct / data.num_nodes  
     return acc
 
+
 #Making a csv file to record the desired parameters
 
-
-results_file= 'experiment_results.csv'
+results_file= '../test_runs/experiment_results.csv'
 with open(results_file, mode='w',newline='') as file:
     writer=csv.writer(file)
 
@@ -237,7 +225,7 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,seperatio
     edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
     graph_data = Data(x=features_tensor, edge_index=edge_index, y=labels_tensor)
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
-    criterion = torch.nn.NLLLoss()
+    criterion = torch.nn.NLLLoss() # is this necessary?
     data_loader = DataLoader([graph_data], batch_size=32, shuffle=True)
     num_epochs = epochs
     train(model,optimizer,data_loader,num_epochs)
@@ -248,23 +236,16 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,seperatio
         writer.writerow([accuracy,lambdav,seperation])
     return accuracy
 
+# Run some tests, if desired
+if __name__ == "__main__":
+    archs = [GCN,GAT,SAGE]
+    for arch in archs:
+        print(arch.string())
+        run_experiment(3000,1,1000,num_classes=2,lambdav=0,degree=10,seperation=5,arch=arch)
 
 
-# for i in np.arange(-3, 3, 1):
-#     print(i)
-#     run_experiment(5000,1,1000,num_classes=2,lambdav=i,degree=10,seperation=6)
-
-archs = [GCN,GAT,SAGE]
-for arch in archs:
-    print(arch.string())
-    run_experiment(3000,1,1000,num_classes=2,lambdav=0,degree=10,seperation=5,arch=arch)
-
-
-
-# run_experiment(500,1,1000,2,-3,10)
-
-
-
+# Do multiple tests and write to CSV (not recommended unless on supercomputer)
+    
 # def fill_it_out():
 #     for 1000*samples in paramters['num_samples']:
 #         accuracy=run_experiment(epochs,lr,noise,samples,classes,homophily,heterophily)
