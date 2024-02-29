@@ -201,7 +201,10 @@ def train(model,optimizer,data_loader,num_epochs):
 
             total_loss += loss.item() * data.num_nodes  
         
-        total_loss /= len(data_loader.dataset)  
+        total_loss /= len(data_loader.dataset)
+        for name, param in model.conv1.named_parameters():
+            print(f"{name}: {param.size()}")
+            print(param.data)
         if (epoch+1)%1000==0:
             print(f'Epoch {epoch+1}/{num_epochs}, Loss: {total_loss:.4f}')
 
