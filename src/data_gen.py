@@ -9,8 +9,23 @@ from torch_geometric.nn import GCNConv, GATConv, SAGEConv
 from torch_geometric.data import DataLoader
 import csv
 
-def generate_coords(f, num_samples, num_classes, noise,seperation, mode="polar"):
+def generate_coords(f, num_samples, num_classes, noise,separation, mode="polar"):
+    """
+    Generates the positions and classes of the nodes in the graph
 
+    Parameters:
+        f (lambda): Function which determines node position
+        num_samples (int): Number of nodes
+        num_classes (int): Number of classes in model
+        noise (float): How noisy (separated) the data is
+        separation (float): How far apart the classes are
+        mode (string): 'cartesian' or 'polar' depending on the domain of f
+
+    Returns:
+        X (ndarray num_classes,): positions of nodes with one entry per class
+        y (ndarray): the class of each node
+    """
+    
     X = np.zeros((num_samples, 2))
     y = np.zeros(num_samples, dtype=int)
     
@@ -26,14 +41,14 @@ def generate_coords(f, num_samples, num_classes, noise,seperation, mode="polar")
         for i in range(start_index,end_index):
 
             if mode == "polar":
-                radius=np.random.normal(loc=seperation*radii[class_index],scale=noise)
+                radius=np.random.normal(loc=separation*radii[class_index],scale=noise)
                 angle=np.random.uniform(low=0,high=2*np.pi)
                 X[i, 0] = radius * f(angle) * np.cos(angle)
                 X[i, 1] = radius * f(angle) * np.sin(angle)
                 y[i] = class_index
 
             elif mode == "cartesian":
-                shift=np.random.normal(loc=seperation*radii[class_index],scale=noise)
+                shift=np.random.normal(loc=separation*radii[class_index],scale=noise)
                 dom=np.random.uniform(low=-5,high=5)
                 X[i, 0] = shift * dom
                 X[i, 1] = shift * f(dom)
@@ -42,8 +57,8 @@ def generate_coords(f, num_samples, num_classes, noise,seperation, mode="polar")
     return X, y
 
 
-def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,seperation):
-    X, y = generate_coords(f, num_samples=num_samples, num_classes=num_classes, noise=noise,seperation=seperation)
+def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,separation):
+    X, y = generate_coords(f, num_samples=num_samples, num_classes=num_classes, noise=noise,separation=separation)
 
 #Generate adjacency matrix SBM
 
@@ -211,13 +226,13 @@ results_file= '../test_runs/experiment_results.csv'
 with open(results_file, mode='w',newline='') as file:
     writer=csv.writer(file)
 
-    writer.writerow(['accuracy','lambdav','noise','num_samples','num_classes','epochs','degree','seperation'])
+    writer.writerow(['accuracy','lambdav','noise','num_samples','num_classes','epochs','degree','separation'])
 
 
-def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,seperation,arch=GCN):
+def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separation,arch=GCN):
     f = lambda t: 1+2*t
     # features,adjacency_matrix,labels=bfeatures, badjacency, blabels
-    features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,seperation)
+    features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,separation)
     # model = GCN(num_features=2, num_classes=num_classes)
     model = arch(2,16,num_classes)
     features_tensor = torch.tensor(features, dtype=torch.float)
@@ -233,7 +248,7 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,seperatio
     print(f'Node-wise Accuracy: {accuracy:.4f}')
     with open(results_file, mode='a',newline='') as file:
         writer=csv.writer(file)
-        writer.writerow([accuracy,lambdav,seperation])
+        writer.writerow([accuracy,lambdav,separation])
     return accuracy
 
 # Run some tests, if desired
@@ -241,7 +256,7 @@ if __name__ == "__main__":
     archs = [GCN,GAT,SAGE]
     for arch in archs:
         print(arch.string())
-        run_experiment(3000,1,1000,num_classes=2,lambdav=0,degree=10,seperation=5,arch=arch)
+        run_experiment(3000,1,1000,num_classes=2,lambdav=0,degree=10,separation=5,arch=arch)
 
 
 # Do multiple tests and write to CSV (not recommended unless on supercomputer)
