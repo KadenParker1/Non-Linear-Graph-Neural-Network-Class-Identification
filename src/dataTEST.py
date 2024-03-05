@@ -289,7 +289,6 @@ def aggregate_norms(num_runs=10):
         norms = run_experiment(5000,1,1000,num_classes=2,lambdav=0,degree=10,separation=.5,arch=SAGE)
         all_norms.append(norms)
     avg_norms = {name: np.mean([run[name] for run in all_norms], axis=0) for name in all_norms[0]}
-
     return avg_norms
 
 def plot_avg_norms(avg_norms):
@@ -302,4 +301,5 @@ def plot_avg_norms(avg_norms):
     plt.show()
 
 avg_norms = aggregate_norms(num_runs=5)
+
 plot_avg_norms(avg_norms)
