@@ -250,7 +250,7 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separatio
     num_epochs = epochs
     norms = train(model,optimizer,data_loader,num_epochs)
     accuracy = test(model,graph_data)
-    # print(f'Node-wise Accuracy: {accuracy:.4f}')
+    print(f'Node-wise Accuracy: {accuracy:.4f}')
     with open(results_file, mode='a',newline='') as file:
         writer=csv.writer(file)
         writer.writerow([accuracy,lambdav,separation])
@@ -286,10 +286,9 @@ def aggregate_norms(num_runs=10):
 
     for i in range(num_runs):
         print(i)
-        norms = run_experiment(3000,1,1000,num_classes=2,lambdav=3,degree=10,separation=5,arch=SAGE)
+        norms = run_experiment(5000,1,1000,num_classes=2,lambdav=0,degree=10,separation=1,arch=SAGE)
         all_norms.append(norms)
     avg_norms = {name: np.mean([run[name] for run in all_norms], axis=0) for name in all_norms[0]}
-
     return avg_norms
 
 def plot_avg_norms(avg_norms):
@@ -301,5 +300,5 @@ def plot_avg_norms(avg_norms):
     plt.ylabel("Norm")
     plt.show()
 
-avg_norms = aggregate_norms(num_runs=100)
+avg_norms = aggregate_norms(num_runs=10)
 plot_avg_norms(avg_norms)
