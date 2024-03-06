@@ -236,7 +236,7 @@ with open(results_file, mode='w',newline='') as file:
 
 
 def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separation,arch=GCN):
-    f = lambda t: 1+2*t
+    f = lambda t: 1
     # features,adjacency_matrix,labels=bfeatures, badjacency, blabels
     features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,separation)
     # model = GCN(num_features=2, num_classes=num_classes)
