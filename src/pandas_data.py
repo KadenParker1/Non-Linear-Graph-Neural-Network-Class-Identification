@@ -7,7 +7,7 @@ filename = 'experiment_results.csv'
 data = pd.read_csv(filename)
 
 
-
+# Display data in a plot
 plt.figure(figsize=(10, 6))
 plt.plot(data['lambdav'], data['accuracy'], marker='o', linestyle='-', color='b')
 plt.title('Accuracy vs Lambda Value')

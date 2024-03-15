@@ -13,6 +13,7 @@ y = np.array(data['radid'])
 z = np.array(data['accuracy'])
 n = len(x)
 row_size = len(set(x))
+
 # Reshaping the data
 z = z.reshape(n//row_size,row_size)
 x = x.reshape(n//row_size,row_size)
@@ -40,6 +41,7 @@ kernel = np.array([[1,4,7,4,1],
 #                    [0,3,13,22,13,3,0],
 #                    [0,0,1,2,1,0,0],])
 
+# Apply the kernel smoothing
 z = convolve(z,kernel)/kernel.sum()
 z = convolve(z,kernel)/kernel.sum()
 

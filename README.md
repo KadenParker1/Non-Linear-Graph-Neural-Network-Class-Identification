@@ -9,6 +9,8 @@ Scripts in src/:
 
 - data_gen.py creates nonlinear graph data and trains a gnn on class identification for single uses and writes the data into test_runs/
 
+- dataTEST.py similar to data_gen, but with a few more features for analysis on individual GNN's
+
 - heatmap.py takes data from test_runs/ and generates a heatmap of GNN performance (TODO) Heatmaps are then saved in Images/
 
 - pandas_data.py simply plots csv data on a plot without the heatmap
