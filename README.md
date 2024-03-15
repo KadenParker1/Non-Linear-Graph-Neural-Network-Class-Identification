@@ -7,9 +7,11 @@ Scripts in src/:
 
 - boringgraph.py creates linearly separable graph data
 
-- data_gen.py creates nonlinear graph data and trains a gnn on class identification for single uses and writes the data into test_runs/
+- graph_gen.py contains functions to generate graph and feature data in 2 or more classes
 
-- dataTEST.py similar to data_gen, but with a few more features for analysis on individual GNN's
+- gnn.py contains GNN architectures and training functions
+
+- experiment.py contains functions to test GNN performance with various architectures and graph structures
 
 - heatmap.py takes data from test_runs/ and generates a heatmap of GNN performance (TODO) Heatmaps are then saved in Images/
 

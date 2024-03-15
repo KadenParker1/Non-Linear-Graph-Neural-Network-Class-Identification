@@ -1,3 +1,9 @@
+"""
+heatmap.py
+
+This file generates a heatmap form csv files found in test_runs
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import convolve

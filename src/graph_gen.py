@@ -1,24 +1,25 @@
 """
-boring_graph.py
+graph_gen.py
 
-This file is similar to graph_gen, but generates linearly separable, Gaussian cloud graph data
-This code generates a linearly seperable graph. Adjacency matrix follows a SBM, and Feature Matrix is Gaussian. 
+This file generates nonlinear graph and feature data for training on GNN's
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
-radid=6
 
-def generate_gaussian(num_samples, num_classes, noise):
+def generate_coords(f, num_samples, num_classes, noise,separation, mode="polar"):
     """
-    Generates Gaussian features and classes
+    Generates the positions and classes of the nodes in the graph concentrically
 
     Parameters:
+        f (lambda): Function which determines node position
         num_samples (int): Number of nodes
         num_classes (int): Number of classes in model
         noise (float): How noisy (separated) the data is
+        separation (float): How far apart the classes are
+        mode (string): 'cartesian' or 'polar' depending on the domain of f
 
     Returns:
         pos (ndarray num_classes,): positions of nodes with one entry per class
@@ -29,27 +30,41 @@ def generate_gaussian(num_samples, num_classes, noise):
     pos = np.zeros((num_samples, 2))
     classes = np.zeros(num_samples, dtype=int)
     
+    # Separate each class concentrically
     samples_per_class = num_samples // num_classes
-
-    # Class means (centers) for Gaussian clouds
-    means=np.array([[radid/2,0],[-1*radid/2,0]])
-
-    # Place nodes in Gaussian clouds around the means
+    radii = np.linspace(1, num_classes, num_classes) 
+    
+    # Add each group of nodes concentrically based on class
     for class_index in range(num_classes):
         start_index = class_index * samples_per_class
         end_index = start_index + samples_per_class
         if class_index == num_classes - 1:  
             end_index = num_samples
         
-        pos[start_index:end_index, 0] = np.random.normal(loc=means[class_index, 0], scale=noise, size=(end_index - start_index))
-        pos[start_index:end_index, 1] = np.random.normal(loc=means[class_index, 1], scale=noise, size=(end_index - start_index))
-        classes[start_index:end_index] = class_index
+        # Add nodes to class
+        for i in range(start_index,end_index):
+            
+            # Using a polar function
+            if mode == "polar":
+                radius=np.random.normal(loc=separation*radii[class_index],scale=noise)
+                angle=np.random.uniform(low=0,high=2*np.pi)
+                pos[i, 0] = radius * f(angle) * np.cos(angle)
+                pos[i, 1] = radius * f(angle) * np.sin(angle)
+                classes[i] = class_index
+
+            # Using a cartesian function
+            elif mode == "cartesian":
+                shift=np.random.normal(loc=separation*radii[class_index],scale=noise)
+                dom=np.random.uniform(low=-5,high=5)
+                pos[i, 0] = shift * dom
+                pos[i, 1] = shift * f(dom)
+                classes[i] = class_index
     
-    # Return results
+    # Return node features
     return pos, classes
 
 
-def generate_boring_graph(num_samples, num_classes,noise,lambdav,degree):
+def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,separation):
     """
     Generates adjacency matrix for the graph by placing edges between nodes
 
@@ -66,13 +81,13 @@ def generate_boring_graph(num_samples, num_classes,noise,lambdav,degree):
         classes (ndarray): the class of each node
     """
 
-    # Generate node positions in Gaussian clouds
-    pos, classes = generate_gaussian(num_samples=num_samples, num_classes=num_classes, noise=noise)
-
-    # Initialize variables
+    # Generate node positions and classes concentrically according to f
+    pos, classes = generate_coords(f, num_samples=num_samples, num_classes=num_classes, noise=noise,separation=separation)
+    
+    # Calculate the probability of inter and intra-class connections
     adjacency_matrix = np.zeros((num_samples, num_samples))
-    p_intra=(degree+lambdav*np.sqrt(degree))/num_samples # Intra-edge probability
-    p_inter =(degree-lambdav*np.sqrt(degree))/num_samples # Inter-edge probability
+    p_intra=(degree+lambdav*np.sqrt(degree))/num_samples
+    p_inter =(degree-lambdav*np.sqrt(degree))/num_samples
     
     # Add edges according to probabilities
     for i in range(num_samples):
@@ -84,19 +99,14 @@ def generate_boring_graph(num_samples, num_classes,noise,lambdav,degree):
                 if np.random.rand() < p_inter:
                     adjacency_matrix[i, j] = adjacency_matrix[j, i] = 1
     
-    # Return graph alongside feature information
+    # Return graph with feature data
     return pos, adjacency_matrix, classes
 
-
-
-num_classes=2
-
-# Generate graph with features
-features, adjacency, labels =generate_boring_graph(1000,num_classes,1,3,10)
-colors = ['red','cyan','magenta','blue','yellow','green'] # Colors for visualizing classes
-
 #Visualize the graph
-def visualize_graph(features, adjacency_matrix,labels):
+colors = ['red','blue','green','yellow','orange'] # Class colors
+
+
+def visualize_graph(features, adjacency_matrix, labels):
     """
     Displays the given graph using NetworkX, with distinct colors for different classes
 
@@ -108,7 +118,8 @@ def visualize_graph(features, adjacency_matrix,labels):
     Returns:
         None
     """
-    # Generate nx graph
+
+    # Generate NewtorkX graph
     G = nx.from_numpy_array(adjacency_matrix)
     # Position-feature dictionary
     pos = {i: (features[i, 0], features[i, 1]) for i in range(len(features))}
@@ -116,15 +127,10 @@ def visualize_graph(features, adjacency_matrix,labels):
     for i, label in enumerate(labels):
         G.nodes[i]['label'] = label
 
-    # Generate the plot and draw
+    # Generate plot and draw
     plt.figure(figsize=(10, 10))
     color_map = [colors[label%4] for label in labels]
     nx.draw_networkx_nodes(G, pos, node_color=color_map, alpha=0.6, edgecolors='w')
     nx.draw_networkx_edges(G, pos, alpha=0.5)
     plt.axis('off')  # Turn off the axis numbers and ticks
     plt.show()
-
-
-# plotting the graph
-#visualize_graph(bfeatures, badjacency, blabels)
-

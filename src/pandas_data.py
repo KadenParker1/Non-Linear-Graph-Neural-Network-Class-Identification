@@ -1,3 +1,9 @@
+"""
+pandas_data.py
+
+This file generates a graph to visualize experimental results from experiments.py
+"""
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
