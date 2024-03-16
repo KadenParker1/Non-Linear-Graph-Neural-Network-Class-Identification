@@ -78,7 +78,7 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separatio
     test_data = DataLoader([graph_data],batch_size=1,shuffle=False)
     num_epochs = epochs
 
-    # Train the model and get accuracy
+    # Train the model and get test for accuracy
     norms = train(model,optimizer,data_loader,num_epochs)
     for data in test_data:
         accuracy = test(model,data)
@@ -119,10 +119,10 @@ def plot_avg_norms(avg_norms):
 
 # Run some tests, if desired
 if __name__ == "__main__":
-    archs = [GT]
+    archs = [SAGE]
     for arch in archs:
         print(arch.string())
-        run_experiment(100,0,1000,num_classes=2,lambdav=0,degree=10,separation=1,arch=arch)
+        run_experiment(100,1,1000,num_classes=2,lambdav=0,degree=10,separation=2,arch=arch)
 
     # Analyze norms
     # avg_norms = aggregate_norms(num_runs=5)

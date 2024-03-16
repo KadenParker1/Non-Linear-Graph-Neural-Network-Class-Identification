@@ -1,12 +1,20 @@
+"""
+utils.py
+
+This file contains various utility functions for working with torch parameters and tensors 
+"""
+
 import torch
 from torch_scatter import scatter
 import numpy as np
 
 
 def count_parameters(model):
+    """ Returns the number of parameters in model """
     return sum([p.numel() for p in model.parameters() if p.requires_grad])
 
 def dense_to_sparse_tensor(matrix):
+    """ Converts the tensor into a sparse tensor object with the same shape """
     rows, columns = torch.where(matrix > 0)
     values = torch.ones(rows.shape)
     indices = torch.from_numpy(np.vstack((rows,
@@ -16,11 +24,13 @@ def dense_to_sparse_tensor(matrix):
 
 
 def add_zeros(data):
+    """ makes features an array of zeros """
     data.x = torch.zeros(data.num_nodes, dtype=torch.long)
     return data
 
 
 def extract_node_feature(data, reduce='add'):
+    """ Apply reduce function to data features and return result """
     if reduce in ['mean', 'max', 'add']:
         data.x = scatter(data.edge_attr,
                          data.edge_index[0],

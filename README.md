@@ -3,7 +3,7 @@
 
 Generating synthetic graphs and then training GNNS on class identification for a given node in the graph. 
 
-Scripts in src/:
+## Scripts in src/:
 
 - boringgraph.py creates linearly separable graph data
 
@@ -16,5 +16,20 @@ Scripts in src/:
 - heatmap.py takes data from test_runs/ and generates a heatmap of GNN performance (TODO) Heatmaps are then saved in Images/
 
 - pandas_data.py simply plots csv data on a plot without the heatmap
+
+## src/GraphTransformer:
+
+This folder contains all the scripts necessary to run GraphTransformer archtecture
+
+- gnn_layers.py 
+
+- layers.py
+
+- models.py
+
+- position_encoding.py
+
+- utils.py
+
 
 
