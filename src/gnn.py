@@ -15,7 +15,7 @@ class GCN(torch.nn.Module):
     """
     Pytorch_Geometric implementation of GCN
     """
-    def __init__(self, num_features,dimension, num_classes):
+    def __init__(self, num_features, dimension, num_classes):
         super(GCN, self).__init__()
         self.conv1 = GCNConv(num_features, dimension)
         self.conv2 = GCNConv(dimension, num_classes)
@@ -119,6 +119,7 @@ def train(model,optimizer,data_loader,num_epochs,get_norms=False):
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0
+
         for data in data_loader:
             optimizer.zero_grad()
             out = model(data)

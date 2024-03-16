@@ -9,12 +9,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from torch_geometric.data import Data
-from torch_geometric.data import DataLoader
+from torch_geometric.loader import DataLoader
 import csv
 
 # Local imports
 from graph_gen import generate_graph
 from gnn import GCN,GAT,SAGE,train
+from GraphTransformer.models import GraphTransformer as GT
 
 #Making a csv file to record the desired parameters
 results_file= '../test_runs/experiment_results.csv'
@@ -74,11 +75,13 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separatio
     graph_data = Data(x=features_tensor, edge_index=edge_index, y=labels_tensor)
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
     data_loader = DataLoader([graph_data], batch_size=32, shuffle=True)
+    test_data = DataLoader([graph_data],batch_size=1,shuffle=False)
     num_epochs = epochs
 
     # Train the model and get accuracy
     norms = train(model,optimizer,data_loader,num_epochs)
-    accuracy = test(model,graph_data)
+    for data in test_data:
+        accuracy = test(model,data)
     print(f'Node-wise Accuracy: {accuracy:.4f}')
 
     # Write results of training to outfile
@@ -116,10 +119,10 @@ def plot_avg_norms(avg_norms):
 
 # Run some tests, if desired
 if __name__ == "__main__":
-    archs = [SAGE]
+    archs = [GT]
     for arch in archs:
         print(arch.string())
-        run_experiment(5000,0,1000,num_classes=2,lambdav=3,degree=10,separation=5,arch=arch)
+        run_experiment(100,0,1000,num_classes=2,lambdav=0,degree=10,separation=1,arch=arch)
 
     # Analyze norms
     # avg_norms = aggregate_norms(num_runs=5)
