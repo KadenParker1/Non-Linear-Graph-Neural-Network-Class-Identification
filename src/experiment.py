@@ -66,16 +66,21 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separatio
 
     # generate graph and feature data
     features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,separation)
-    
+    test_features, test_adjacency_matrix, test_labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,separation)
+
     # Generate model and training info
     model = arch(2,16,num_classes)
     features_tensor = torch.tensor(features, dtype=torch.float)
     labels_tensor = torch.tensor(labels, dtype=torch.long)
     edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
+    test_features_tensor = torch.tensor(test_features, dtype=torch.float)
+    test_labels_tensor = torch.tensor(test_labels, dtype=torch.long)
+    test_edge_index = torch.tensor(np.array(test_adjacency_matrix.nonzero()), dtype=torch.long)
     graph_data = Data(x=features_tensor, edge_index=edge_index, y=labels_tensor)
+    test_graph = Data(x=test_features_tensor, edge_index=test_edge_index, y=test_labels_tensor)
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
     data_loader = DataLoader([graph_data], batch_size=32, shuffle=True)
-    test_data = DataLoader([graph_data],batch_size=1,shuffle=False)
+    test_data = DataLoader([test_graph],batch_size=32,shuffle=False)
     num_epochs = epochs
 
     # Train the model and get test for accuracy
@@ -119,10 +124,10 @@ def plot_avg_norms(avg_norms):
 
 # Run some tests, if desired
 if __name__ == "__main__":
-    archs = [SAGE]
+    archs = [GCN]
     for arch in archs:
         print(arch.string())
-        run_experiment(100,1,1000,num_classes=2,lambdav=0,degree=10,separation=2,arch=arch)
+        run_experiment(1000,1,1000,num_classes=2,lambdav=3,degree=10,separation=10,arch=arch)
 
     # Analyze norms
     # avg_norms = aggregate_norms(num_runs=5)
