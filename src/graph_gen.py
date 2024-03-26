@@ -9,16 +9,16 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 
-def generate_coords(f, num_samples, num_classes, noise,separation, mode="polar"):
+def generate_coords(num_samples, num_classes, noise,separation, f=lambda t:1, mode="polar"):
     """
     Generates the positions and classes of the nodes in the graph concentrically
 
     Parameters:
-        f (lambda): Function which determines node position
         num_samples (int): Number of nodes
         num_classes (int): Number of classes in model
         noise (float): How noisy (separated) the data is
-        separation (float): How far apart the classes are
+        separation (float): How far apart the classes are 
+        f (lambda): Function which determines node position
         mode (string): 'cartesian' or 'polar' depending on the domain of f
 
     Returns:
@@ -64,7 +64,7 @@ def generate_coords(f, num_samples, num_classes, noise,separation, mode="polar")
     return pos, classes
 
 
-def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,separation):
+def generate_graph(num_samples, num_classes,noise,lambdav,degree,separation, f=lambda t:1,mode="polar"):
     """
     Generates adjacency matrix for the graph by placing edges between nodes
 
@@ -74,6 +74,9 @@ def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,separation):
         noise (float): How noisy (separated) the data is
         lambdav (float): Dictates the level of homophily or heterophily in the graph
         degree (float): Average degree of the graph
+        f (lambda): Function which determines node position
+        mode (string): 'cartesian' or 'polar' depending on the domain of f
+
 
     Returns:
         pos (ndarray num_classes,): positions of nodes with one entry per class
@@ -82,7 +85,7 @@ def generate_graph(f, num_samples, num_classes,noise,lambdav,degree,separation):
     """
 
     # Generate node positions and classes concentrically according to f
-    pos, classes = generate_coords(f, num_samples=num_samples, num_classes=num_classes, noise=noise,separation=separation)
+    pos, classes = generate_coords(num_samples=num_samples, num_classes=num_classes, noise=noise,separation=separation,f=f,mode=mode)
     
     # Calculate the probability of inter and intra-class connections
     adjacency_matrix = np.zeros((num_samples, num_samples))

@@ -65,8 +65,8 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separatio
     f = lambda t: 1
 
     # generate graph and feature data
-    features, adjacency_matrix, labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,separation)
-    test_features, test_adjacency_matrix, test_labels = generate_graph(f,num_samples,num_classes,noise,lambdav,degree,separation)
+    features, adjacency_matrix, labels = generate_graph(num_samples,num_classes,noise,lambdav,degree,separation,f)
+    test_features, test_adjacency_matrix, test_labels = generate_graph(num_samples,num_classes,noise,lambdav,degree,separation,f)
 
     # Generate model and training info
     model = arch(2,16,num_classes)
@@ -124,10 +124,7 @@ def plot_avg_norms(avg_norms):
 
 # Run some tests, if desired
 if __name__ == "__main__":
-    archs = [GCN]
-    for arch in archs:
-        print(arch.string())
-        run_experiment(1000,1,1000,num_classes=2,lambdav=3,degree=10,separation=10,arch=arch)
+    run_experiment(epochs=1000,noise=1,num_samples=1000,num_classes=2,lambdav=3,degree=10,separation=2,arch=SAGE)
 
     # Analyze norms
     # avg_norms = aggregate_norms(num_runs=5)
