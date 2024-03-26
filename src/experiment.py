@@ -21,7 +21,7 @@ from GraphTransformer.models import GraphTransformer as GT
 results_file= '../test_runs/experiment_results.csv'
 with open(results_file, mode='w',newline='') as file:
     writer=csv.writer(file)
-    writer.writerow(['accuracy','lambdav','noise','num_samples','num_classes','epochs','degree','separation'])
+    writer.writerow(['accuracy','lambdav','separation'])
 
 
 def test(model,data):
@@ -124,7 +124,9 @@ def plot_avg_norms(avg_norms):
 
 # Run some tests, if desired
 if __name__ == "__main__":
-    run_experiment(epochs=1000,noise=1,num_samples=1000,num_classes=2,lambdav=3,degree=10,separation=2,arch=SAGE)
+    for lambd in np.linspace(-3,3,2):
+        for sep in np.linspace(0,10,2):
+            run_experiment(epochs=1000,noise=1,num_samples=1000,num_classes=2,lambdav=lambd,degree=10,separation=sep,arch=SAGE)
 
     # Analyze norms
     # avg_norms = aggregate_norms(num_runs=5)

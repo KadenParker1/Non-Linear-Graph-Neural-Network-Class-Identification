@@ -15,7 +15,7 @@ data = pd.read_csv(filename)
 
 # Degree on y-axis,lambda on x-axis, accuracy as heat colors
 x = np.array(data['lambdav'])
-y = np.array(data['radid'])
+y = np.array(data['separation'])
 z = np.array(data['accuracy'])
 n = len(x)
 row_size = len(set(x))
