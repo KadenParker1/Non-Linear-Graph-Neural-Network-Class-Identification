@@ -186,4 +186,4 @@ dependencies:
       - transformers==4.38.2
       - tzdata==2024.1
       - umap-learn==0.5.5
-prefix: /Users/kadenparker/miniconda3/envs/Research
+prefix: ./envs
