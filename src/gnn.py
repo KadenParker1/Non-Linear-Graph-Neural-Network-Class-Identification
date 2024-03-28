@@ -17,7 +17,8 @@ class GCN(torch.nn.Module):
     """
     def __init__(self, num_features, dimension, num_classes):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(num_features, dimension)
+        #self.conv1 = lambda x,e: x@torch.ones((num_features, dimension))
+        self.conv1 = GCNConv(num_features,dimension)
         self.conv2 = GCNConv(dimension, num_classes)
     
     def forward(self, data):

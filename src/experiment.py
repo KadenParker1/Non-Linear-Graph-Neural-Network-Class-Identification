@@ -124,9 +124,7 @@ def plot_avg_norms(avg_norms):
 
 # Run some tests, if desired
 if __name__ == "__main__":
-    for lambd in np.linspace(-3,3,2):
-        for sep in np.linspace(0,10,2):
-            run_experiment(epochs=1000,noise=1,num_samples=1000,num_classes=2,lambdav=lambd,degree=10,separation=sep,arch=SAGE)
+    run_experiment(epochs=1000,noise=1,num_samples=1000,num_classes=2,lambdav=-3,degree=10,separation=3,arch=GCN)
 
     # Analyze norms
     # avg_norms = aggregate_norms(num_runs=5)
