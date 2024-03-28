@@ -15,7 +15,6 @@ import csv
 # Local imports
 from graph_gen import generate_graph
 from gnn import GCN,GAT,SAGE,train
-from GraphTransformer.models import GraphTransformer as GT
 
 #Making a csv file to record the desired parameters
 results_file= '../test_runs/experiment_results.csv'
@@ -122,7 +121,7 @@ if __name__ == "__main__":
     archs = [SAGE]
     for arch in archs:
         print(arch.string())
-        run_experiment(100,1,1000,num_classes=2,lambdav=0,degree=10,separation=2,arch=arch)
+        run_experiment(1000,1,1000,num_classes=2,lambdav=0,degree=10,separation=2,arch=arch)
 
     # Analyze norms
     # avg_norms = aggregate_norms(num_runs=5)
