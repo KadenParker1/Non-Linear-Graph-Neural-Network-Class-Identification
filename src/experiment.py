@@ -14,8 +14,8 @@ import csv
 
 # Local imports
 from graph_gen import generate_graph
-from gnn import GCN,GAT,SAGE,train
-from GraphTransformer.models import GraphTransformer as GT
+from gnn import GCN,GAT,SAGE,ChebConv,train
+#from GraphTransformer.models import GraphTransformer as GT
 
 #Making a csv file to record the desired parameters
 results_file= '../test_runs/experiment_results.csv'
@@ -41,7 +41,7 @@ def test(model,data):
 
     return acc
 
-def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separation,arch=GCN):
+def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separation,arch=ChebConv):
     """
     Generates a graph with SBM data and trains a given GNN architecture to determine nodewise accuracy
 
@@ -69,7 +69,8 @@ def run_experiment(epochs,noise,num_samples,num_classes,lambdav,degree,separatio
     test_features, test_adjacency_matrix, test_labels = generate_graph(num_samples,num_classes,noise,lambdav,degree,separation,f)
 
     # Generate model and training info
-    model = arch(2,16,num_classes)
+    #model = arch(2,16,num_classes)
+    model = arch(-1,16,3)
     features_tensor = torch.tensor(features, dtype=torch.float)
     labels_tensor = torch.tensor(labels, dtype=torch.long)
     edge_index = torch.tensor(np.array(adjacency_matrix.nonzero()), dtype=torch.long)
@@ -124,7 +125,7 @@ def plot_avg_norms(avg_norms):
 
 # Run some tests, if desired
 if __name__ == "__main__":
-    run_experiment(epochs=1000,noise=1,num_samples=1000,num_classes=2,lambdav=-3,degree=10,separation=3,arch=GCN)
+    run_experiment(epochs=1500,noise=1,num_samples=1000,num_classes=2,lambdav=-3,degree=10,separation=3,arch=GCN)
 
     # Analyze norms
     # avg_norms = aggregate_norms(num_runs=5)
